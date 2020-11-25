@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -44,7 +43,7 @@ namespace _2019
         {
             for (var i = 0; i <= 99; i++)
             {
-                for(var j = 0; j <= 99; j++)
+                for (var j = 0; j <= 99; j++)
                 {
                     IntCodeEmulator emulator = new(input);
                     emulator.WriteMemory(1, i);
