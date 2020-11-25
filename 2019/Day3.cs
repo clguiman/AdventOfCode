@@ -12,10 +12,10 @@ namespace _2019
         public void Test1()
         {
             AssertCollection(new[] {
-                new Line() { P1 = new() { X = 0, Y = 0 }, P2 = new() { X = 8, Y = 0 } },
-                new Line() { P1 = new() { X = 8, Y = 0 }, P2 = new() { X = 8, Y = 5 } },
-                new Line() { P1 = new() { X = 8, Y = 5 }, P2 = new() { X = 3, Y = 5 } },
-                new Line() { P1 = new() { X = 3, Y = 5 }, P2 = new() { X = 3, Y = 2 } },
+                new Line() { P1 = new() { X = 0, Y = 0 }, P2 = new() { X = 8, Y = 0 }, StepsUntilHere = 0 },
+                new Line() { P1 = new() { X = 8, Y = 0 }, P2 = new() { X = 8, Y = 5 }, StepsUntilHere = 8 },
+                new Line() { P1 = new() { X = 8, Y = 5 }, P2 = new() { X = 3, Y = 5 }, StepsUntilHere = 13 },
+                new Line() { P1 = new() { X = 3, Y = 5 }, P2 = new() { X = 3, Y = 2 }, StepsUntilHere = 18 },
             }, ParsePath("R8,U5,L5,D3"));
         }
 
@@ -23,10 +23,10 @@ namespace _2019
         public void Test2()
         {
             AssertCollection(new[] {
-                new Line() { P1 = new() { X = 0, Y = 0 }, P2 = new() { X = 0, Y = 7 } },
-                new Line() { P1 = new() { X = 0, Y = 7 }, P2 = new() { X = 6, Y = 7 } },
-                new Line() { P1 = new() { X = 6, Y = 7 }, P2 = new() { X = 6, Y = 3 } },
-                new Line() { P1 = new() { X = 6, Y = 3 }, P2 = new() { X = 2, Y = 3 } },
+                new Line() { P1 = new() { X = 0, Y = 0 }, P2 = new() { X = 0, Y = 7 }, StepsUntilHere = 0 },
+                new Line() { P1 = new() { X = 0, Y = 7 }, P2 = new() { X = 6, Y = 7 }, StepsUntilHere = 7 },
+                new Line() { P1 = new() { X = 6, Y = 7 }, P2 = new() { X = 6, Y = 3 }, StepsUntilHere = 13 },
+                new Line() { P1 = new() { X = 6, Y = 3 }, P2 = new() { X = 2, Y = 3 }, StepsUntilHere = 17 },
             }, ParsePath("U7,R6,D4,L4"));
         }
 
@@ -121,6 +121,21 @@ namespace _2019
             Assert.Equal(865, Solution1(paths[0], paths[1]));
         }
 
+        [Fact]
+        public void Test7()
+        {
+            Assert.Equal(30, Solution2("R8,U5,L5,D3", "U7,R6,D4,L4"));
+            Assert.Equal(610, Solution2("R75,D30,R83,U83,L12,D49,R71,U7,L72", "U62,R66,U55,R34,D71,R55,D58,R83"));
+            Assert.Equal(410, Solution2("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51", "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"));
+        }
+
+        [Fact]
+        public void Test8()
+        {
+            var paths = File.ReadAllLines("input/day3.txt").ToArray();
+            Assert.Equal(35038, Solution2(paths[0], paths[1]));
+        }
+
         private void AssertCollection<Type>(IEnumerable<Type> expected, IEnumerable<Type> actual)
         {
             Assert.Equal(expected.Count(), actual.Count());
@@ -130,6 +145,7 @@ namespace _2019
         private static IEnumerable<Line> ParsePath(string path)
         {
             var curPos = new Point() { X = 0, Y = 0 };
+            var steps = 0;
             foreach (var token in path.Split(','))
             {
                 var direction = token[0];
@@ -144,7 +160,9 @@ namespace _2019
                     'L' => new Point() { X = curPos.X - length, Y = curPos.Y },
                     _ => throw new Exception("Invalid direction!"),
                 };
-                yield return new Line() { P1 = curPos, P2 = newPos };
+                yield return new Line() { P1 = curPos, P2 = newPos, StepsUntilHere = steps };
+
+                steps += length;
                 curPos = newPos;
             }
         }
@@ -161,18 +179,40 @@ namespace _2019
             var p2 = ParsePath(path2).ToArray();
             return GetPathIntersections(p1, p2).Select(x => Math.Abs(x.X) + Math.Abs(x.Y)).Min();
         }
-        
+
+        private static int Solution2(string path1, string path2)
+        {
+            var p1 = ParsePath(path1).ToArray();
+            var p2 = ParsePath(path2).ToArray();
+            return GetPathIntersections2(p1, p2)
+                .Select(item => 
+                    item.line1.StepsUntilHere + 
+                    item.line1.P1.Distance(item.intersection) +
+                    item.line2.StepsUntilHere +
+                    item.line2.P1.Distance(item.intersection))
+                .Min();
+        }
+
+        private static IEnumerable<(Point intersection, Line line1, Line line2)> GetPathIntersections2(IEnumerable<Line> path1, IEnumerable<Line> path2) =>
+            path1
+            .SelectMany(line1 => path2
+                .SelectMany(line2 => line1.GetIntersections(line2)
+                    .Select(intersection => (intersection, line1, line2))))
+            .Where(x => x.intersection.X != 0 && x.intersection.X != 0);
 
         private struct Point
         {
             public int X { get; init; }
             public int Y { get; init; }
+
+            public int Distance(Point other) => (int)Math.Sqrt((X - other.X) * (X - other.X) + (Y - other.Y)*(Y - other.Y));
         }
 
         private struct Line
         {
             public Point P1 { get; init; }
             public Point P2 { get; init; }
+            public int StepsUntilHere { get; init; }
 
             bool IsVertical => P1.X == P2.X;
 
