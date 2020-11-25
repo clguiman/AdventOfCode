@@ -35,45 +35,27 @@ namespace _2019
 
         private int SolutionBeforePatch(int[] input)
         {
-            for (var i = 0; i < input.Length; i += 4)
-            {
-                var opCode = input[i];
-                var operand1 = (i + 1 < input.Length) ? input[i + 1] : 0;
-                var operand2 = (i + 2 < input.Length) ? input[i + 2] : 0;
-                var destination = (i + 3 < input.Length) ? input[i + 3] : 0;
-                switch (opCode)
-                {
-                    case 1:
-                        input[destination] = input[operand1] + input[operand2];
-                        break;
-                    case 2:
-                        input[destination] = input[operand1] * input[operand2];
-                        break;
-                    case 99:
-                        return input[0];
-                    default:
-                        throw new Exception("Invalid op code!");
-                }
-            }
-            throw new Exception("The program didn't halt!");
+            IntCodeEmulator emulator = new(input);
+            emulator.Run();
+            return emulator.ReadMemory(0);
         }
 
         private int Solution2(int[] input)
         {
-            int[] bkp = new int[input.Length];
-            input.CopyTo(bkp, 0);
-
             for (var i = 0; i <= 99; i++)
             {
                 for(var j = 0; j <= 99; j++)
                 {
+                    IntCodeEmulator emulator = new(input);
+                    emulator.WriteMemory(1, i);
+                    emulator.WriteMemory(2, j);
+                    emulator.Run();
                     input[1] = i;
                     input[2] = j;
-                    if (19690720 == SolutionBeforePatch(input))
+                    if (19690720 == emulator.ReadMemory(0))
                     {
                         return 100 * i + j;
                     }
-                    bkp.CopyTo(input, 0);
                 }
             }
             return 0;
