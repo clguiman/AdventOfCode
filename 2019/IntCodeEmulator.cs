@@ -1,52 +1,51 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.Threading;
+using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace _2019
 {
     internal class IntCodeEmulator
     {
+        public interface IAsyncIO
+        {
+            public Task<int> ReadAsync(CancellationToken cts);
+            public Task WriteAsync(int value, CancellationToken cts);
+        }
+
         public IntCodeEmulator(int[] memory)
         {
             this.memory = new int[memory.Length];
             memory.CopyTo(this.memory, 0);
         }
 
-        public void Run()
-        {
-            // ignore I/O
-            using var stream = new MemoryStream();
-            using var br = new BinaryReader(stream);
-            using var bw = new BinaryWriter(stream);
-            Run(br, bw);
-        }
+        public void Run() => Run(new AsyncQueueIO(new AsyncQueue<int>(), new AsyncQueue<int>()));
 
         public void Run(ReadOnlySpan<int> input, List<int> output)
         {
-            output.Clear();
-            using var inputStream = new MemoryStream(input.Length * sizeof(int));
-            using var inputWriter = new BinaryWriter(inputStream);
+            var inputQueue = new AsyncQueue<int>();
+            var outputQueue = new AsyncQueue<int>();
             foreach (var i in input)
             {
-                inputWriter.Write(i);
+                inputQueue.Enqueue(i);
             }
-            inputStream.Position = 0;
 
-            using var outputStream = new MemoryStream();
-            using var br = new BinaryReader(inputStream);
-            using var bw = new BinaryWriter(outputStream);
-            Run(br, bw);
+            Run(new AsyncQueueIO(inputQueue, outputQueue));
 
-            outputStream.Position = 0;
-            using var outputReader = new BinaryReader(outputStream);
-            
-            while (outputStream.Position < outputStream.Length)
+            output.Clear();
+            while (outputQueue.TryDequeue(out var v))
             {
-                output.Add(outputReader.ReadInt32());
+                output.Add(v);
             }
         }
 
-        public void Run(BinaryReader inputStream, BinaryWriter outputStream)
+        public void Run(IAsyncIO io)
+        {
+            new JoinableTaskFactory(new JoinableTaskContext()).Run(async () => await RunAsync(io, default));
+        }
+
+        public async Task RunAsync(IAsyncIO io, CancellationToken cts)
         {
             var instructionPtr = 0;
             while (instructionPtr < memory.Length)
@@ -64,10 +63,10 @@ namespace _2019
                         memory[destination] = ReadOperand(operand1, opCode.Param1Mode) * ReadOperand(operand2, opCode.Param2Mode);
                         break;
                     case OpCode.ReadInput:
-                        memory[operand1] = inputStream.ReadInt32();
+                        memory[operand1] = await io.ReadAsync(cts);
                         break;
                     case OpCode.WriteOutput:
-                        outputStream.Write(ReadOperand(operand1, opCode.Param1Mode));
+                        await io.WriteAsync(ReadOperand(operand1, opCode.Param1Mode), cts);
                         break;
                     case OpCode.LessThan:
                         memory[destination] = ReadOperand(operand1, opCode.Param1Mode) < ReadOperand(operand2, opCode.Param2Mode) ? 1 : 0;
@@ -164,5 +163,24 @@ namespace _2019
         }
 
         private readonly int[] memory;
+
+        public sealed class AsyncQueueIO : IAsyncIO
+        {
+            public AsyncQueueIO(AsyncQueue<int> inputQueue, AsyncQueue<int> outputQueue)
+            {
+                input = inputQueue;
+                output = outputQueue;
+            }
+            public Task<int> ReadAsync(CancellationToken cts) => input.DequeueAsync(cts);
+
+            public Task WriteAsync(int value, CancellationToken cts)
+            {
+                output.Enqueue(value);
+                return Task.FromResult(true);
+            }
+
+            private readonly AsyncQueue<int> input;
+            private readonly AsyncQueue<int> output;
+        }
     }
 }
