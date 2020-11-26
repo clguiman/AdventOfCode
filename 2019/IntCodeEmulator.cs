@@ -10,22 +10,22 @@ namespace _2019
     {
         public interface IAsyncIO
         {
-            public Task<int> ReadAsync(CancellationToken cts);
-            public Task WriteAsync(int value, CancellationToken cts);
+            public Task<long> ReadAsync(CancellationToken cts);
+            public Task WriteAsync(long value, CancellationToken cts);
         }
 
-        public IntCodeEmulator(int[] memory)
+        public IntCodeEmulator(long[] memory, bool useLargeMemoryMode = false)
         {
-            this.memory = new int[memory.Length];
+            this.memory = new long[useLargeMemoryMode ? 1024 * 1024 : memory.Length];
             memory.CopyTo(this.memory, 0);
         }
 
-        public void Run() => Run(new AsyncQueueIO(new AsyncQueue<int>(), new AsyncQueue<int>()));
+        public void Run() => Run(new AsyncQueueIO(new AsyncQueue<long>(), new AsyncQueue<long>()));
 
-        public void Run(ReadOnlySpan<int> input, List<int> output)
+        public void Run(ReadOnlySpan<long> input, List<long> output)
         {
-            var inputQueue = new AsyncQueue<int>();
-            var outputQueue = new AsyncQueue<int>();
+            var inputQueue = new AsyncQueue<long>();
+            var outputQueue = new AsyncQueue<long>();
             foreach (var i in input)
             {
                 inputQueue.Enqueue(i);
@@ -47,7 +47,7 @@ namespace _2019
 
         public async Task RunAsync(IAsyncIO io, CancellationToken cts)
         {
-            var instructionPtr = 0;
+            long instructionPtr = 0;
             while (instructionPtr < memory.Length)
             {
                 var opCode = DecodedInstruction.DecodeInstruction(memory[instructionPtr]);
@@ -57,22 +57,22 @@ namespace _2019
                 switch (opCode.Code)
                 {
                     case OpCode.Add:
-                        memory[destination] = ReadOperand(operand1, opCode.Param1Mode) + ReadOperand(operand2, opCode.Param2Mode);
+                        WriteOperand(destination, opCode.Param3Mode, ReadOperand(operand1, opCode.Param1Mode) + ReadOperand(operand2, opCode.Param2Mode));
                         break;
                     case OpCode.Multiply:
-                        memory[destination] = ReadOperand(operand1, opCode.Param1Mode) * ReadOperand(operand2, opCode.Param2Mode);
+                        WriteOperand(destination, opCode.Param3Mode, ReadOperand(operand1, opCode.Param1Mode) * ReadOperand(operand2, opCode.Param2Mode));
                         break;
                     case OpCode.ReadInput:
-                        memory[operand1] = await io.ReadAsync(cts);
+                        WriteOperand(operand1, opCode.Param1Mode, await io.ReadAsync(cts));
                         break;
                     case OpCode.WriteOutput:
                         await io.WriteAsync(ReadOperand(operand1, opCode.Param1Mode), cts);
                         break;
                     case OpCode.LessThan:
-                        memory[destination] = ReadOperand(operand1, opCode.Param1Mode) < ReadOperand(operand2, opCode.Param2Mode) ? 1 : 0;
+                        WriteOperand(destination, opCode.Param3Mode, ReadOperand(operand1, opCode.Param1Mode) < ReadOperand(operand2, opCode.Param2Mode) ? 1 : 0);
                         break;
                     case OpCode.Equals:
-                        memory[destination] = ReadOperand(operand1, opCode.Param1Mode) == ReadOperand(operand2, opCode.Param2Mode) ? 1 : 0;
+                        WriteOperand(destination, opCode.Param3Mode, ReadOperand(operand1, opCode.Param1Mode) == ReadOperand(operand2, opCode.Param2Mode) ? 1 : 0);
                         break;
                     case OpCode.JumpIfTrue:
                         if (ReadOperand(operand1, opCode.Param1Mode) != 0)
@@ -86,6 +86,9 @@ namespace _2019
                             instructionPtr = ReadOperand(operand2, opCode.Param2Mode) - opCode.Size;
                         }
                         break;
+                    case OpCode.RelativeBaseOffset:
+                        relativeBase += ReadOperand(operand1, opCode.Param1Mode);
+                        break;
                     case OpCode.Halt:
                         return;
                     default:
@@ -96,22 +99,38 @@ namespace _2019
             throw new Exception("The program didn't halt!");
         }
 
-        public int ReadMemory(int address)
+        public long ReadMemory(long address)
         {
             return memory[address];
         }
 
-        public void WriteMemory(int address, int value)
+        public void WriteMemory(long address, long value)
         {
             memory[address] = value;
         }
 
-        private int ReadOperand(int operand, ParameterMode mode) => mode switch
+        private long ReadOperand(long operand, ParameterMode mode) => mode switch
         {
             ParameterMode.Position => memory[operand],
             ParameterMode.Immediate => operand,
+            ParameterMode.Relative => memory[operand + relativeBase],
             _ => throw new Exception("Invalid parameter mode!"),
         };
+
+        private void WriteOperand(long operand, ParameterMode mode, long value)
+        {
+            switch (mode)
+            {
+                case ParameterMode.Position:
+                    memory[operand] = value;
+                    break;
+                case ParameterMode.Relative:
+                    memory[operand + relativeBase] = value;
+                    break;
+                default:
+                    throw new Exception("Invalid parameter mode!");
+            }
+        }
 
         private enum OpCode
         {
@@ -123,6 +142,7 @@ namespace _2019
             JumpIfFalse = 6,
             LessThan = 7,
             Equals = 8,
+            RelativeBaseOffset = 9,
             Halt = 99
         }
 
@@ -130,6 +150,7 @@ namespace _2019
         {
             Position = 0,
             Immediate = 1,
+            Relative = 2,
         }
 
         private struct DecodedInstruction
@@ -140,7 +161,7 @@ namespace _2019
             public ParameterMode Param2Mode { get; init; }
             public ParameterMode Param3Mode { get; init; }
 
-            public static DecodedInstruction DecodeInstruction(int rawData) => new DecodedInstruction()
+            public static DecodedInstruction DecodeInstruction(long rawData) => new DecodedInstruction()
             {
                 Code = (OpCode)(rawData % 100),
                 Size = GetInstructionSize((OpCode)(rawData % 100)),
@@ -155,32 +176,34 @@ namespace _2019
                 {
                     OpCode.Add or OpCode.Multiply or OpCode.LessThan or OpCode.Equals => 4,
                     OpCode.JumpIfFalse or OpCode.JumpIfTrue => 3,
-                    OpCode.ReadInput or OpCode.WriteOutput => 2,
+                    OpCode.ReadInput or OpCode.WriteOutput or OpCode.RelativeBaseOffset => 2,
                     OpCode.Halt => 1,
                     _ => throw new ArgumentException("Invalid op code!"),
                 };
             }
         }
 
-        private readonly int[] memory;
+        private readonly long[] memory;
+
+        private long relativeBase = 0;
 
         public sealed class AsyncQueueIO : IAsyncIO
         {
-            public AsyncQueueIO(AsyncQueue<int> inputQueue, AsyncQueue<int> outputQueue)
+            public AsyncQueueIO(AsyncQueue<long> inputQueue, AsyncQueue<long> outputQueue)
             {
                 input = inputQueue;
                 output = outputQueue;
             }
-            public Task<int> ReadAsync(CancellationToken cts) => input.DequeueAsync(cts);
+            public Task<long> ReadAsync(CancellationToken cts) => input.DequeueAsync(cts);
 
-            public Task WriteAsync(int value, CancellationToken cts)
+            public Task WriteAsync(long value, CancellationToken cts)
             {
                 output.Enqueue(value);
                 return Task.FromResult(true);
             }
 
-            private readonly AsyncQueue<int> input;
-            private readonly AsyncQueue<int> output;
+            private readonly AsyncQueue<long> input;
+            private readonly AsyncQueue<long> output;
         }
     }
 }
