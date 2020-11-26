@@ -205,5 +205,27 @@ namespace _2019
             private readonly AsyncQueue<long> input;
             private readonly AsyncQueue<long> output;
         }
+
+        public sealed class SyncIO : IAsyncIO
+        {
+            public delegate long OnRead();
+            public delegate void OnWrite(long value);
+
+            public SyncIO(OnRead readFunc, OnWrite writeFunc)
+            {
+                input = readFunc;
+                output = writeFunc;
+            }
+            public Task<long> ReadAsync(CancellationToken cts) => Task.FromResult(input());
+
+            public Task WriteAsync(long value, CancellationToken cts)
+            {
+                output(value);
+                return Task.FromResult(false);
+            }
+
+            private readonly OnRead input;
+            private readonly OnWrite output;
+        }
     }
 }
