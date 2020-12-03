@@ -13,23 +13,35 @@ namespace _2019
         public async Task Test1Async()
         {
             var screen = new Dictionary<(long X, long Y), long>();
-            await PlayAsync(GetRobot(), screen);
+            await PlayAsync(GetGame(), screen);
             Assert.Equal(376, screen.Count(x => x.Value == 2));
         }
 
-        private static IntCodeEmulator GetRobot()
+        [Fact]
+        public async Task Test2Async()
+        {
+            var screen = new Dictionary<(long X, long Y), long>();
+            var game = GetGame();
+            game.WriteMemory(0, 2);
+            Assert.Equal(18509, await PlayAsync(game, screen));
+        }
+
+        private static IntCodeEmulator GetGame()
         {
             return new IntCodeEmulator(File.ReadAllText("input/day13.txt").Split(',').Select(long.Parse).ToArray(), true);
         }
 
-        private static async Task PlayAsync(IntCodeEmulator robot, Dictionary<(long X, long Y), long> screen)
+        private static async Task<long> PlayAsync(IntCodeEmulator game, Dictionary<(long X, long Y), long> screen)
         {
             var outputState = OutputState.WaitX;
             long x = 0;
             long y = 0;
+            long score = 0;
+            var ballPosition = (X: 0L, Y: 0L);
+            var paddlePosition = (X: 0L, Y: 0L);
 
-            await robot.RunAsync(new IntCodeEmulator.SyncIO(
-                () => throw new Exception("Read isn't expected"),
+            await game.RunAsync(new IntCodeEmulator.SyncIO(
+                () => paddlePosition.X > ballPosition.X ? -1 : paddlePosition.X == ballPosition.X ? 0 : 1,
                 (value) =>
                 {
                     switch (outputState)
@@ -43,12 +55,34 @@ namespace _2019
                             outputState = OutputState.WaitTile;
                             break;
                         case OutputState.WaitTile:
-                            screen.Add((x, y), value);
+                            if (x == -1 && y == 0)
+                            {
+                                score = value;
+                            }
+                            else if (value == 4)
+                            {
+                                ballPosition = (x, y);
+                            }
+                            else if (value == 3)
+                            {
+                                paddlePosition = (x, y);
+                            }
+
+                            if (screen.ContainsKey((x, y)))
+                            {
+                                screen[(x, y)] = value;
+                            }
+                            else
+                            {
+                                screen.Add((x, y), value);
+                            }
+
                             outputState = OutputState.WaitX;
                             break;
                         default: throw new Exception("invalid state");
                     }
                 }), default);
+            return score;
         }
 
         private enum OutputState
