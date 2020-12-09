@@ -5,7 +5,7 @@ using Xunit;
 
 namespace _2019
 {
-    public class Day1
+    public class Day01
     {
         [Fact]
         public void Test1()
