@@ -53,41 +53,41 @@ namespace _2020
 
         private static int Part1(IEnumerable<string> input)
         {
-            var console = new ConsoleEmulator(input);
+            var asm = new AsmInterpreter(input);
             try
             {
-                console.Run(detectInfiniteLoop: true);
+                asm.Run(detectInfiniteLoop: true);
             }
-            catch (ConsoleEmulator.InfiniteLoopException)
+            catch (AsmInterpreter.InfiniteLoopException)
             {
-                return console.Acc;
+                return asm.Acc;
             }
             return 0;
         }
 
         private static int Part2(IEnumerable<string> input)
         {
-            var instructions = input.Select(i => ConsoleEmulator.DecodedInstruction.Decode(i)).ToArray();
+            var instructions = input.Select(i => AsmInterpreter.DecodedInstruction.Decode(i)).ToArray();
 
             for (var i = 0; i < instructions.Length; i++)
             {
-                if (instructions[i].Op == ConsoleEmulator.Operation.Jmp || instructions[i].Op == ConsoleEmulator.Operation.Nop)
+                if (instructions[i].Op == AsmInterpreter.Operation.Jmp || instructions[i].Op == AsmInterpreter.Operation.Nop)
                 {
-                    var cpy = new ConsoleEmulator.DecodedInstruction[instructions.Length];
+                    var cpy = new AsmInterpreter.DecodedInstruction[instructions.Length];
                     instructions.CopyTo(cpy, 0);
-                    cpy[i] = new ConsoleEmulator.DecodedInstruction()
+                    cpy[i] = new AsmInterpreter.DecodedInstruction()
                     {
                         Value = cpy[i].Value,
-                        Op = (cpy[i].Op == ConsoleEmulator.Operation.Jmp) ? ConsoleEmulator.Operation.Nop : ConsoleEmulator.Operation.Jmp
+                        Op = (cpy[i].Op == AsmInterpreter.Operation.Jmp) ? AsmInterpreter.Operation.Nop : AsmInterpreter.Operation.Jmp
                     };
 
-                    var console = new ConsoleEmulator(cpy);
+                    var asm = new AsmInterpreter(cpy);
                     try
                     {
-                        console.Run(detectInfiniteLoop: true);
-                        return console.Acc;
+                        asm.Run(detectInfiniteLoop: true);
+                        return asm.Acc;
                     }
-                    catch (ConsoleEmulator.InfiniteLoopException)
+                    catch (AsmInterpreter.InfiniteLoopException)
                     {
 
                     }

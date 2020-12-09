@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace _2020
 {
-    internal class ConsoleEmulator
+    internal class AsmInterpreter
     {
         public enum Operation
         {
@@ -40,11 +40,11 @@ namespace _2020
             }
         }
 
-        public ConsoleEmulator(IEnumerable<string> instructions) : this(instructions.Select(i => DecodedInstruction.Decode(i)))
+        public AsmInterpreter(IEnumerable<string> instructions) : this(instructions.Select(i => DecodedInstruction.Decode(i)))
         {
         }
 
-        public ConsoleEmulator(IEnumerable<DecodedInstruction> instructions)
+        public AsmInterpreter(IEnumerable<DecodedInstruction> instructions)
         {
             this.instructions = instructions.ToArray();
         }
@@ -52,18 +52,18 @@ namespace _2020
         public void Run(bool detectInfiniteLoop)
         {
             var executedInstructions = new HashSet<int>();
-            while (ip < instructions.Length)
+            while (Ip < instructions.Length)
             {
                 if (detectInfiniteLoop)
                 {
-                    if (executedInstructions.Contains(ip))
+                    if (executedInstructions.Contains(Ip))
                     {
-                        throw new InfiniteLoopException($"Instruction on position {ip} ({instructions[ip]}) was already executed!");
+                        throw new InfiniteLoopException($"Instruction on position {Ip} ({instructions[Ip]}) was already executed!");
                     }
-                    executedInstructions.Add(ip);
+                    executedInstructions.Add(Ip);
                 }
 
-                Step(instructions[ip]);
+                Step(instructions[Ip]);
             }
         }
 
@@ -73,20 +73,20 @@ namespace _2020
             {
                 case Operation.Acc:
                     Acc += instr.Value;
-                    ip++;
+                    Ip++;
                     break;
                 case Operation.Jmp:
-                    ip += instr.Value;
+                    Ip += instr.Value;
                     break;
                 default:
-                    ip++;
+                    Ip++;
                     break;
             }
         }
 
         public int Acc { get; private set; }
 
-        private int ip;
+        public int Ip { get; private set; }
 
         private readonly DecodedInstruction[] instructions;
     }
