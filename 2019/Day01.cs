@@ -17,7 +17,7 @@ namespace _2019
         [Fact]
         public void Test2()
         {
-            Assert.Equal(3390596, Solution(File.ReadAllLines("input/day1.txt").Select(int.Parse)));
+            Assert.Equal(3390596, Solution(File.ReadAllLines("input/day01.txt").Select(int.Parse)));
         }
 
         [Fact]
@@ -30,7 +30,7 @@ namespace _2019
         [Fact]
         public void Test4()
         {
-            Assert.Equal(5083024, Solution2(File.ReadAllLines("input/day1.txt").Select(int.Parse)));
+            Assert.Equal(5083024, Solution2(File.ReadAllLines("input/day01.txt").Select(int.Parse)));
         }
 
         private int Solution(IEnumerable<int> input) => input.Select(x => x / 3 - 2).Sum();

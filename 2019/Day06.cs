@@ -19,7 +19,7 @@ namespace _2019
         [Fact]
         public void Test2()
         {
-            Assert.Equal(135690, Solution1(File.ReadAllLines("input/day6.txt")));
+            Assert.Equal(135690, Solution1(File.ReadAllLines("input/day06.txt")));
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace _2019
         [Fact]
         public void Test4()
         {
-            Assert.Equal(298, Solution2(File.ReadAllLines("input/day6.txt")));
+            Assert.Equal(298, Solution2(File.ReadAllLines("input/day06.txt")));
         }
 
         private static int Solution1(IEnumerable<string> input)

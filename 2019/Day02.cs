@@ -18,7 +18,7 @@ namespace _2019
         [Fact]
         public void Test2()
         {
-            var input = File.ReadAllText("input/day2.txt").Split(',').Select(long.Parse).ToArray();
+            var input = File.ReadAllText("input/day02.txt").Split(',').Select(long.Parse).ToArray();
             input[1] = 12;
             input[2] = 2;
             Assert.Equal(3790689, SolutionBeforePatch(input));
@@ -27,7 +27,7 @@ namespace _2019
         [Fact]
         public void Test3()
         {
-            var input = File.ReadAllText("input/day2.txt").Split(',').Select(long.Parse).ToArray();
+            var input = File.ReadAllText("input/day02.txt").Split(',').Select(long.Parse).ToArray();
 
             Assert.Equal(6533, Solution2(input));
         }

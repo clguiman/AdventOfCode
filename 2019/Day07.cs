@@ -26,7 +26,7 @@ namespace _2019
         [Fact]
         public void Test2()
         {
-            var code = File.ReadAllText("input/day7.txt").Split(',').Select(long.Parse).ToArray();
+            var code = File.ReadAllText("input/day07.txt").Split(',').Select(long.Parse).ToArray();
             Assert.Equal(422858,
                 GenerateUniqueInput(0, 5)
                 .Select(input => RunWithInput(code, input))
@@ -50,7 +50,7 @@ namespace _2019
         [Fact]
         public void Test4()
         {
-            var code = File.ReadAllText("input/day7.txt").Split(',').Select(long.Parse).ToArray();
+            var code = File.ReadAllText("input/day07.txt").Split(',').Select(long.Parse).ToArray();
             Assert.Equal(14897241,
                 GenerateUniqueInput(5, 5)
                 .Select(input => RunInFeedbackLoopWithInput(code, input))

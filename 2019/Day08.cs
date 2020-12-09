@@ -21,7 +21,7 @@ namespace _2019
         [Fact]
         public void Test2()
         {
-            var input = File.ReadAllText("input/day8.txt");
+            var input = File.ReadAllText("input/day08.txt");
             var layers = Enumerable
                 .Range(0, input.Length)
                 .Select(x => (x, input[x] - '0'))
@@ -34,7 +34,7 @@ namespace _2019
         [Fact]
         public void Test3()
         {
-            var input = File.ReadAllText("input/day8.txt");
+            var input = File.ReadAllText("input/day08.txt");
 
             var image = Solution2(
                 Enumerable

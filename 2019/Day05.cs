@@ -18,7 +18,7 @@ namespace _2019
         [Fact]
         public void Test2()
         {
-            var emulator = new IntCodeEmulator(File.ReadAllText("input/day5.txt").Split(',').Select(long.Parse).ToArray());
+            var emulator = new IntCodeEmulator(File.ReadAllText("input/day05.txt").Split(',').Select(long.Parse).ToArray());
             var output = new List<long>();
             emulator.Run(new long[] { 1 }, output);
 
@@ -62,7 +62,7 @@ namespace _2019
                 1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
                 999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99 }, 42));
 
-            Assert.Equal(7873292, RunWithSingleInput(File.ReadAllText("input/day5.txt").Split(',').Select(long.Parse).ToArray(), 5));
+            Assert.Equal(7873292, RunWithSingleInput(File.ReadAllText("input/day05.txt").Split(',').Select(long.Parse).ToArray(), 5));
         }
 
         private static long RunWithSingleInput(long[] code, long inputValue)

@@ -117,7 +117,7 @@ namespace _2019
         [Fact]
         public void Test6()
         {
-            var paths = File.ReadAllLines("input/day3.txt").ToArray();
+            var paths = File.ReadAllLines("input/day03.txt").ToArray();
             Assert.Equal(865, Solution1(paths[0], paths[1]));
         }
 
@@ -132,7 +132,7 @@ namespace _2019
         [Fact]
         public void Test8()
         {
-            var paths = File.ReadAllLines("input/day3.txt").ToArray();
+            var paths = File.ReadAllLines("input/day03.txt").ToArray();
             Assert.Equal(35038, Solution2(paths[0], paths[1]));
         }
 

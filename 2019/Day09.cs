@@ -37,7 +37,7 @@ namespace _2019
         [Fact]
         public void Test4()
         {
-            var emulator = new IntCodeEmulator(File.ReadAllText("input/day9.txt").Split(',').Select(long.Parse).ToArray(), true);
+            var emulator = new IntCodeEmulator(File.ReadAllText("input/day09.txt").Split(',').Select(long.Parse).ToArray(), true);
             List<long> output = new();
             emulator.Run(new long[] { 1 }, output);
             Assert.Single(output);
@@ -47,7 +47,7 @@ namespace _2019
         [Fact]
         public void Test5()
         {
-            var emulator = new IntCodeEmulator(File.ReadAllText("input/day9.txt").Split(',').Select(long.Parse).ToArray(), true);
+            var emulator = new IntCodeEmulator(File.ReadAllText("input/day09.txt").Split(',').Select(long.Parse).ToArray(), true);
             List<long> output = new();
             emulator.Run(new long[] { 2 }, output);
             Assert.Single(output);
