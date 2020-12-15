@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -67,10 +66,6 @@ namespace _2020
                         memory[address] = value;
                     }
                 }
-                else
-                {
-                    throw new Exception("invalid entry!");
-                }
             }
             return memory.Values.Sum();
         }
@@ -97,8 +92,8 @@ namespace _2020
                 {
                     var originalAddress = long.Parse(entry.Substring(4).Split(']')[0]);
                     var value = long.Parse(entry.Split('=').Last().Trim());
-                    originalAddress |= OrMask;
-                    foreach (var address in GenerateAllMasksFromFloatingMask(FloatingMask).Select(m => (originalAddress & m.AndMask) | (m.OrMask)))
+                    originalAddress = (originalAddress | OrMask) & ~FloatingMask;
+                    foreach (var address in GenerateAllMasksFromFloatingMask(FloatingMask).Select(mask => originalAddress | mask))
                     {
                         if (!memory.TryAdd(address, value))
                         {
@@ -106,27 +101,19 @@ namespace _2020
                         }
                     }
                 }
-                else
-                {
-                    throw new Exception("invalid entry!");
-                }
             }
             return memory.Values.Sum();
         }
 
-        private static IEnumerable<(long AndMask, long OrMask)> GenerateAllMasksFromFloatingMask(long floatingMask)
+        private static IEnumerable<long> GenerateAllMasksFromFloatingMask(long floatingMask)
         {
-            List<(long AndMask, long OrMask)> computedMasks = new() { (AndMask: -1L, OrMask: 0L) };
-            for (var bitMask = 1L; floatingMask > 0; floatingMask >>= 1, bitMask <<= 1)
+            List<long> computedMasks = new() { 0L };
+            foreach (var bitMask in Enumerable.Range(0, 36)
+                .Select(x => 1L << x)
+                .Where(bitMask => (floatingMask & bitMask) != 0))
             {
-                if (floatingMask % 2 == 0)
-                {
-                    continue;
-                }
                 computedMasks = computedMasks
-                    .SelectMany(c => new[] {
-                        (c.AndMask & ~bitMask, c.OrMask ),
-                        (c.AndMask, c.OrMask | bitMask) })
+                    .SelectMany(c => new[] { c, c | bitMask })
                     .ToList();
             }
             return computedMasks;
