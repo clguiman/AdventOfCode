@@ -59,13 +59,13 @@ namespace _2020
                                 var cur = pocketClone.GetCube(x, y, z, w);
                                 if (cur == CubeState.Active)
                                 {
-                                    var nCount = pocketClone.GetNeighbors(x, y, z, w).Count(c => c == CubeState.Active);
+                                    var nCount = pocketClone.GetNeighbors(x, y, z, w).Where(c => c == CubeState.Active).Take(4).Count();
                                     if (nCount != 2 && nCount != 3)
                                     {
                                         pocket.SetCube(x, y, z, w, CubeState.Inactive);
                                     }
                                 }
-                                else if (cur == CubeState.Inactive && pocketClone.GetNeighbors(x, y, z, w).Count(c => c == CubeState.Active) == 3)
+                                else if (cur == CubeState.Inactive && pocketClone.GetNeighbors(x, y, z, w).Where(c => c == CubeState.Active).Count() == 3)
                                 {
                                     pocket.SetCube(x, y, z, w, CubeState.Active);
                                 }
@@ -139,18 +139,25 @@ namespace _2020
                 max = max
             };
 
-            public IEnumerable<CubeState> GetNeighbors(int x, int y, int z, int w) => Enumerable.Range(-1, 3)
+            private readonly static IEnumerable<(int x, int y, int z, int w)> NeighborOffsets3D = GenerateNeighborOffsets(false).ToArray();
+            private readonly static IEnumerable<(int x, int y, int z, int w)> NeighborOffsets4D = GenerateNeighborOffsets(true).ToArray();
+
+            private static IEnumerable<(int x, int y, int z, int w)> GenerateNeighborOffsets(bool has4D) =>
+                Enumerable.Range(-1, 3)
                     .SelectMany(x => Enumerable.Range(-1, 3)
-                                        .Select(y => (x, y))
-                                        .SelectMany(item => Enumerable.Range(-1, 3)
-                                            .Select(z => (item.x, item.y, z))
-                                        .SelectMany(item => Enumerable.Range(has4thDimension ? -1 : 0, has4thDimension ? 3 : 1)
-                                            .Select(w => (item.x, item.y, item.z, w)))))
+                        .Select(y => (x, y))
+                    .SelectMany(item => Enumerable.Range(-1, 3)
+                        .Select(z => (item.x, item.y, z))
+                    .SelectMany(item => Enumerable.Range(has4D ? -1 : 0, has4D ? 3 : 1)
+                        .Select(w => (item.x, item.y, item.z, w)))));
+
+            public IEnumerable<CubeState> GetNeighbors(int x, int y, int z, int w) =>
+                (has4thDimension ? NeighborOffsets4D : NeighborOffsets3D)
                     .Select(offset => (x: offset.x + x, y: offset.y + y, z: offset.z + z, w: offset.w + w))
                     .Where(pos => pos.x != x || pos.y != y || pos.z != z || pos.w != w)
                     .Select(pos => activeCubes.Contains(pos) ? CubeState.Active : CubeState.Inactive);
 
-            public IReadOnlyCollection<CubeState> AllStates => activeCubes.Select(x => CubeState.Active).ToArray();//cubes;
+            public IReadOnlyCollection<CubeState> AllStates => activeCubes.Select(x => CubeState.Active).ToArray();
 
             public (int Min, int Max) Range => (min - 2, max + 2);
 
