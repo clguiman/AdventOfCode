@@ -43,141 +43,130 @@ namespace _2020
         }
 
         private static long Part1(IEnumerable<string> input) => input
-                .Select(l => Expression.Parse(l.AsSpan()))
-                .Select(e => e.Resolve())
+                .Select(l => ExpressionEvaluator.Evaluate(l, ExpressionEvaluator.DefaultOperatorPrecendenceComparator))
                 .Sum();
 
         private static long Part2(IEnumerable<string> input) => input
-                //.Select(ChangePrecendence)
-                .Select(l => Expression.Parse(l.AsSpan()))
-                .Select(e => e.Resolve())
+                .Select(l => ExpressionEvaluator.Evaluate(l, (a,b)=>
+                    a == ExpressionEvaluator.Operator.Add && b == ExpressionEvaluator.Operator.Multiply ? 1 : 0))
                 .Sum();
 
-        private class Expression
+        private static class ExpressionEvaluator
         {
-            public static Expression Parse(ReadOnlySpan<char> input)
+            public static long Evaluate(string expression, Func<Operator, Operator, int> operatorPrecendenceComparator)
             {
-                var ret = new Expression();
-                long curNumber = 0;
-                Operation curOperation = Operation.Add;
-                for (var idx = 0; idx < input.Length; idx++)
-                {
-                    var c = input[idx];
-                    if (char.IsWhiteSpace(c))
-                    {
-                        continue;
-                    }
+                Stack<Operator> operators = new();
+                Stack<long> values = new();
 
-                    if (char.IsNumber(c))
+                foreach (var (startIdx, endIdx) in Tokenize(expression))
+                {
+                    var token = expression.AsSpan(startIdx, endIdx - startIdx + 1);
+                    if (token.Length == 1)
                     {
-                        curNumber = curNumber * 10 + (c - '0');
-                        continue;
-                    }
-                    else if (!char.IsNumber(c))
-                    {
-                        if (curNumber != 0)
+                        if (token[0] == '(')
                         {
-                            ret.dependents.Add((curOperation, new Expression() { resolvedValue = curNumber, isExpressionResolved = true }));
+                            operators.Push(Operator.OpenParanthesis);
+                            continue;
                         }
-                        curNumber = 0;
+                        if (token[0] == ')')
+                        {
+                            while (operators.Peek() != Operator.OpenParanthesis)
+                            {
+                                var a = values.Pop();
+                                var b = values.Pop();
+                                values.Push(ComputeOperation(a, b, operators.Pop()));
+                            }
+                            operators.Pop();
+                            continue;
+                        }
+                        if (token[0] == '+' || token[0] == '*')
+                        {
+                            var op = token[0] == '+' ? Operator.Add : Operator.Multiply;
+                            while (operators.Count > 0)
+                            {
+                                var topOp = operators.Peek();
+                                if (topOp == Operator.OpenParanthesis ||
+                                    topOp == Operator.ClosedParanthesis ||
+                                    operatorPrecendenceComparator(op, topOp) > 0)
+                                {
+                                    break;
+                                }
+                                var a = values.Pop();
+                                var b = values.Pop();
+                                values.Push(ComputeOperation(a, b, operators.Pop()));
+                            }
+                            operators.Push(op);
+                            continue;
+                        }
                     }
-                    if (c == AdditionToken || c == MultiplicationToken)
+                    if (long.TryParse(token, out long value))
                     {
-                        curOperation = c == AdditionToken ? Operation.Add : Operation.Multiply;
+                        values.Push(value);
                         continue;
                     }
-                    if (c == OpenParanthesisToken)
-                    {
-                        var closedParanthesisPos = GetCorespondingClosedParanthesisPos(input.Slice(idx + 1));
-                        ret.dependents.Add((curOperation, Parse(input.Slice(idx + 1, closedParanthesisPos))));
-                        idx = idx + closedParanthesisPos + 1;
-                        continue;
-                    }
+
+                    throw new Exception($"Invalid token! {token.ToString()}");
                 }
-                if (curNumber != 0)
+
+                while (operators.Count > 0)
                 {
-                    ret.dependents.Add((curOperation, new Expression() { resolvedValue = curNumber, isExpressionResolved = true }));
+                    var a = values.Pop();
+                    var b = values.Pop();
+                    values.Push(ComputeOperation(a, b, operators.Pop()));
                 }
-                return ret;
+                if (values.Count != 1)
+                {
+                    throw new Exception("values stack has more than 1 element!");
+                }
+                return values.Peek();
             }
 
-            private static int GetCorespondingClosedParanthesisPos(ReadOnlySpan<char> input)
+            private static IEnumerable<(int startIdx, int endIdx)> Tokenize(string input)
             {
-                var c = 1;
+                var startIdx = 0;
                 for (var idx = 0; idx < input.Length; idx++)
                 {
-                    if (input[idx] == ')')
+                    if (char.IsWhiteSpace(input[idx]) ||
+                        input[idx] == '(' ||
+                        input[idx] == ')' ||
+                        input[idx] == '+' ||
+                        input[idx] == '*' ||
+                        idx == input.Length - 1)
                     {
-                        c--;
-                    }
-                    else if (input[idx] == '(')
-                    {
-                        c++;
-                    }
-                    if (c == 0)
-                    {
-                        return idx;
+                        while (startIdx < idx && char.IsWhiteSpace(input[startIdx]))
+                        {
+                            startIdx++;
+                        }
+                        if (startIdx < idx)
+                        {
+                            yield return (startIdx, idx - 1);
+                            startIdx = idx;
+                        }
+                        if (!char.IsWhiteSpace(input[idx]))
+                        {
+                            yield return (idx, idx);
+                            startIdx++;
+                        }
                     }
                 }
-                return -1;
             }
 
-            public long Resolve()
+            private static long ComputeOperation(long a, long b, Operator op) => op switch
             {
-                if (isExpressionResolved)
-                {
-                    return resolvedValue;
-                }
-                long result = 0L;
-                foreach (var cur in dependents)
-                {
-                    var curValue = cur.expression.Resolve();
-                    if (cur.precedingOperation == Operation.Add)
-                    {
-                        result += curValue;
-                    }
-                    else
-                    {
-                        result *= curValue;
-                    }
-                }
+                Operator.Add => a + b,
+                Operator.Multiply => a * b,
+                _ => throw new ArgumentException(nameof(op)),
+            };
 
-                return result;
-            }
+            public static int DefaultOperatorPrecendenceComparator(Operator a, Operator b) =>0;
 
-            private long resolvedValue = -1L;
-            private bool isExpressionResolved = false;
-            List<(Operation precedingOperation, Expression expression)> dependents = new();
-
-
-            public override string ToString()
+            public enum Operator
             {
-                if (isExpressionResolved)
-                {
-                    return resolvedValue.ToString();
-                }
-
-                var sb = new StringBuilder();
-                foreach (var d in dependents)
-                {
-                    sb.Append('[');
-                    sb.Append(d.precedingOperation == Operation.Add ? '+' : '*');
-                    sb.Append(d.expression.ToString());
-                    sb.Append(']');
-                }
-                return sb.ToString();
-            }
-            private enum Operation
-            {
+                OpenParanthesis,
+                ClosedParanthesis,
                 Add,
                 Multiply
             }
-
-            private static readonly char AdditionToken = '+';
-            private static readonly char MultiplicationToken = '*';
-            private static readonly char WhitespaceToken = ' ';
-            private static readonly char OpenParanthesisToken = '(';
-            private static readonly char ClosedParanthesisToken = ')';
         }
     }
 }
