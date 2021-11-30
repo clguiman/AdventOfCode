@@ -50,6 +50,10 @@ namespace _2019
             long instructionPtr = 0;
             while (instructionPtr < memory.Length)
             {
+                if (cts.IsCancellationRequested)
+                {
+                    return;
+                }
                 var opCode = DecodedInstruction.DecodeInstruction(memory[instructionPtr]);
                 var operand1 = (instructionPtr + 1 < memory.Length) ? memory[instructionPtr + 1] : 0;
                 var operand2 = (instructionPtr + 2 < memory.Length) ? memory[instructionPtr + 2] : 0;
