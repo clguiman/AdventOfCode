@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -45,17 +46,31 @@ namespace _2019
             Assert.Equal("30379585", SignalAsString(RunFFT(ParseSignal(File.ReadAllText("input/day16.txt")), 100)).Substring(0, 8));
         }
 
-        private static int[] ParseSignal(string input)
+        [Fact]
+        public void Test7()
         {
-            int[] ret = new int[input.Length];
-            var idx = 0;
-            foreach (var c in input)
-            {
-                ret[idx] = c - '0';
-                idx++;
-            }
-            return ret;
+            Assert.Equal("84462026", SignalAsString(RunFFTPart2(ParseSignal("03036732577212944063491565474664"), 100)).Substring(0, 8));
         }
+
+        [Fact]
+        public void Test8()
+        {
+            Assert.Equal("78725270", SignalAsString(RunFFTPart2(ParseSignal("02935109699940807407585447034323"), 100)).Substring(0, 8));
+        }
+
+        [Fact]
+        public void Test9()
+        {
+            Assert.Equal("53553731", SignalAsString(RunFFTPart2(ParseSignal("03081770884921959731165446850517"), 100)).Substring(0, 8));
+        }
+
+        [Fact]
+        public void Test10()
+        {
+            Assert.Equal("22808931", SignalAsString(RunFFTPart2(ParseSignal(File.ReadAllText("input/day16.txt")), 100)).Substring(0, 8));
+        }
+
+        private static int[] ParseSignal(string input) => input.Select(c => c - '0').ToArray();
 
         private static string SignalAsString(int[] input)
         {
@@ -73,10 +88,37 @@ namespace _2019
             for (var i = 0; i < phases; i++)
             {
                 ret = Enumerable.Range(1, ret.Length)
-                                .Select(pos => Math.Abs(ret.Zip(GeneratePattern(pos, signal.Length))
+                                .Select(pos => Math.Abs(ret.Zip(GeneratePattern(pos, ret.Length))
                                                 .Select(x => (x.First * x.Second) % 10).Sum() % 10))
                                 .ToArray();
             }
+            return ret;
+        }
+
+        private int[] RunFFTPart2(int[] signal, int phases)
+        {
+            int messageOffset = 0;
+            for (var i = 0; i < 7; i++)
+            {
+                messageOffset *= 10;
+                messageOffset += signal[i];
+            }
+
+            int[] ret = new int[signal.Length * 10000 - messageOffset];
+            int index = 0;
+            for (int i = messageOffset; i < signal.Length * 10000; i++)
+            {
+                ret[index++] = signal[i % signal.Length];
+            }
+
+            for (var i = 0; i < phases; i++)
+            {
+                for(var j = ret.Length - 2; j >= 0; j--)
+                {
+                    ret[j]=(ret[j] + ret[j+1]) % 10;
+                }
+            }
+
             return ret;
         }
 
