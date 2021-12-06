@@ -14,10 +14,14 @@ namespace _2019
             public Task WriteAsync(long value, CancellationToken cts);
         }
 
-        public IntCodeEmulator(long[] memory, bool useLargeMemoryMode = false)
+        public IntCodeEmulator(long[] memory, bool useLargeMemoryMode = false, bool resetable = false)
         {
-            this.memory = new long[useLargeMemoryMode ? 1024 * 1024 : memory.Length];
-            memory.CopyTo(this.memory, 0);
+            this.memory = new InfiniteMemory<long>(memory, useLargeMemoryMode, resetable);
+        }
+
+        public void Reset()
+        {
+            memory.Reset();
         }
 
         public void Run() => Run(new AsyncQueueIO(new AsyncQueue<long>(), new AsyncQueue<long>()));
@@ -54,10 +58,10 @@ namespace _2019
                 {
                     return;
                 }
-                var opCode = DecodedInstruction.DecodeInstruction(memory[instructionPtr]);
-                var operand1 = (instructionPtr + 1 < memory.Length) ? memory[instructionPtr + 1] : 0;
-                var operand2 = (instructionPtr + 2 < memory.Length) ? memory[instructionPtr + 2] : 0;
-                var destination = (instructionPtr + 3 < memory.Length) ? memory[instructionPtr + 3] : 0;
+                var opCode = DecodedInstruction.DecodeInstruction(memory.GetAt(instructionPtr));
+                var operand1 = memory.GetAt(instructionPtr + 1); //(instructionPtr + 1 < memory.Length) ? memory[instructionPtr + 1] : 0;
+                var operand2 = memory.GetAt(instructionPtr + 2);//(instructionPtr + 2 < memory.Length) ? memory[instructionPtr + 2] : 0;
+                var destination = memory.GetAt(instructionPtr + 3);//(instructionPtr + 3 < memory.Length) ? memory[instructionPtr + 3] : 0;
                 switch (opCode.Code)
                 {
                     case OpCode.Add:
@@ -103,21 +107,18 @@ namespace _2019
             throw new Exception("The program didn't halt!");
         }
 
-        public long ReadMemory(long address)
-        {
-            return memory[address];
-        }
+        public long ReadMemory(long address) => memory.GetAt(address);
 
         public void WriteMemory(long address, long value)
         {
-            memory[address] = value;
+            memory.SetAt(address, value);
         }
 
         private long ReadOperand(long operand, ParameterMode mode) => mode switch
         {
-            ParameterMode.Position => memory[operand],
+            ParameterMode.Position => memory.GetAt(operand),
             ParameterMode.Immediate => operand,
-            ParameterMode.Relative => memory[operand + relativeBase],
+            ParameterMode.Relative => memory.GetAt(operand + relativeBase),
             _ => throw new Exception("Invalid parameter mode!"),
         };
 
@@ -126,10 +127,10 @@ namespace _2019
             switch (mode)
             {
                 case ParameterMode.Position:
-                    memory[operand] = value;
+                    memory.SetAt(operand, value);
                     break;
                 case ParameterMode.Relative:
-                    memory[operand + relativeBase] = value;
+                    memory.SetAt(operand + relativeBase, value);
                     break;
                 default:
                     throw new Exception("Invalid parameter mode!");
@@ -187,7 +188,7 @@ namespace _2019
             }
         }
 
-        private readonly long[] memory;
+        private readonly InfiniteMemory<long> memory;
 
         private long relativeBase = 0;
 
@@ -231,5 +232,68 @@ namespace _2019
             private readonly OnRead input;
             private readonly OnWrite output;
         }
+    }
+
+    internal class InfiniteMemory<T>
+    {
+        public InfiniteMemory(T[] memory, bool useLargeMemoryMode = false, bool resetable = false)
+        {
+            this._contigousMemory = new T[useLargeMemoryMode ?  1024 * 1024 : memory.Length];
+            memory.CopyTo(this._contigousMemory, 0);
+            if (resetable)
+            {
+                this._bkpMemory = new T[this._contigousMemory.Length];
+                this._contigousMemory.CopyTo(this._bkpMemory, 0);
+            }
+            this._sparseMemory = new();
+        }
+
+        public long Length => _contigousMemory.LongLength;
+
+        public void Reset()
+        {
+            if (_bkpMemory == null)
+            {
+                throw new Exception("The object was not constructed as resetable!");
+            }
+            this._bkpMemory.CopyTo(this._contigousMemory, 0);
+            _sparseMemory.Clear();
+        }
+
+        public T GetAt(long idx)
+        {
+            if (idx < _contigousMemory.Length)
+            {
+                return _contigousMemory[idx];
+            }
+            if (_sparseMemory.TryGetValue(idx, out var ret))
+            {
+                return ret;
+            }
+            _sparseMemory.Add(idx, default);
+            return default;
+        }
+
+        public void SetAt(long idx, T value)
+        {
+            if (idx < _contigousMemory.Length)
+            {
+                _contigousMemory[idx] = value;
+                return;
+            }
+            if (_sparseMemory.ContainsKey(idx))
+            {
+                _sparseMemory[idx] = value;
+            }
+            else
+            {
+                _sparseMemory.Add(idx, value);
+            }
+        }
+
+        private readonly T[] _contigousMemory;
+        private readonly T[] _bkpMemory;
+
+        private readonly Dictionary<long, T> _sparseMemory;
     }
 }

@@ -27,7 +27,7 @@ namespace _2019
         [Fact]
         public async Task Part1TestAsync()
         {
-            var emulator = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray(), useLargeMemoryMode: true);
+            var emulator = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
             Assert.Equal(4864, Part1(await GetPhotoAsync(emulator)));
         }
 
@@ -57,7 +57,7 @@ namespace _2019
         [Fact]
         public async Task Part2TestAsync()
         {
-            var emulator = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray(), useLargeMemoryMode: true);
+            var emulator = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
             var photo = await GetPhotoAsync(emulator);
             /*
             photo:
@@ -126,7 +126,7 @@ namespace _2019
                 "L,6,L,10,L,10,L,6"
             }.Aggregate((a, b) => a + '\n' + b) + "\nn\n";
 
-            var emulator2 = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray(), useLargeMemoryMode: true);
+            var emulator2 = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
             emulator2.WriteMemory(0, 2);
 
             var instructionIdx = 0;
