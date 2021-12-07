@@ -34,12 +34,12 @@ namespace _2021
 
         private static int Part1(IEnumerable<int> input)
         {
-            var avg = (int)input.Average();
-            return Enumerable.Range(0, avg).Select(newPos => input.Select(x => Math.Abs(x - newPos)).Sum()).Min();
+            var median = input.OrderBy(x => x).Skip((input.Count() / 2) ).First();
+            return input.Select(x => Math.Abs(x - median)).Sum();
         }
         private static int Part2(IEnumerable<int> input)
         {
-            return Enumerable.Range(input.Min(), input.Max() - input.Min()).Select(newPos => input.Select(x =>
+            return Enumerable.Range((int)input.Average() - 1, 4).Select(newPos => input.Select(x =>
             {
                 var d = Math.Abs(x - newPos);
                 return (d * (d + 1)) / 2;
