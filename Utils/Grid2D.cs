@@ -53,6 +53,38 @@
             }
         }
 
+        public Grid2D<T> BFS((int x, int y) initialPosition, Predicate<(T currentItem, T possibleAdjacentItem)> shouldWalkPredicate, Func<T, T> markVisitedFunc)
+        {
+            List<(int x, int y)> nextSteps = new() { initialPosition };
+            while (nextSteps.Count > 0)
+            {
+                var newPositions = new List<(int x, int y)>();
+                foreach (var (curX, curY) in nextSteps)
+                {
+                    var curItem = At(curX, curY);
+                    newPositions.AddRange(
+                        GetAdjacentLocations(curX, curY)
+                        .Where(t => shouldWalkPredicate.Invoke((curItem, At(t.x, t.y))))
+                        );
+
+                    _grid[curY][curX] = markVisitedFunc(_grid[curY][curX]);
+                }
+                nextSteps = newPositions.Distinct().ToList();
+            }
+            return this;
+        }
+
+        public IEnumerable<(T currentValue, IEnumerable<T> adjacentValues)> EnumerateWithAdjacentValues()
+        {
+            for (var y = 0; y < Height; y++)
+            {
+                for (var x = 0; x < Width; x++)
+                {
+                    yield return (_grid[y][x], GetAdjacentLocations(x, y).Select(t => _grid[t.y][t.x]));
+                }
+            }
+        }
+
         private readonly T[][] _grid;
     }
 }
