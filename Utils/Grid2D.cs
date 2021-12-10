@@ -48,6 +48,8 @@
 
         public T At(int x, int y) => _grid[y][x];
 
+        public ref T AtRef(int x, int y) => ref _grid[y][x];
+
         public void SetAt(T val, int x, int y)
         {
             _grid[y][x] = val;
@@ -55,7 +57,7 @@
 
         public Grid2D<T> Clone() => new(_grid);
 
-        public IEnumerable<(int x, int y)> GetAdjacentLocations(int locationX, int locationY)
+        public IEnumerable<(int x, int y)> GetAdjacentOrthogonalLocations(int locationX, int locationY)
         {
             if (locationY > 0)
             {
@@ -85,7 +87,7 @@
                 {
                     var curItem = At(curX, curY);
                     newPositions.AddRange(
-                        GetAdjacentLocations(curX, curY)
+                        GetAdjacentOrthogonalLocations(curX, curY)
                         .Where(t => shouldWalkPredicate.Invoke((curItem, At(t.x, t.y))))
                         );
 

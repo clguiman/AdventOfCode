@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Utils;
 using Xunit;
 
 namespace _2021
@@ -54,17 +55,17 @@ namespace _2021
         }
 
         private static int Part1(string[] input) => ConstructDiagram(ParseInput(input)
-                    .Where(i => i.Item1.X == i.Item2.X || i.Item1.Y == i.Item2.Y))
-                .SelectMany(x => x).Count(x => x > 1);
+                        .Where(i => i.Item1.X == i.Item2.X || i.Item1.Y == i.Item2.Y))
+                    .Count(x => x > 1);
 
-        private static int Part2(string[] input) => ConstructDiagram(ParseInput(input)).SelectMany(x => x).Count(x => x > 1);
+        private static int Part2(string[] input) => ConstructDiagram(ParseInput(input)).Count(x => x > 1);
 
-        private static int[][] ConstructDiagram(IEnumerable<(Point, Point)> lines)
+        private static Grid2D<int> ConstructDiagram(IEnumerable<(Coordinates2D, Coordinates2D)> lines)
         {
             var height = lines.Max(i => i.Item1.Y > i.Item2.Y ? i.Item1.Y : i.Item2.Y) + 1;
             var width = lines.Max(i => i.Item1.X > i.Item2.X ? i.Item1.X : i.Item2.X) + 1;
 
-            var diagram = Enumerable.Range(0, height).Select(_ => Enumerable.Range(0, width).Select(__ => 0).ToArray()).ToArray();
+            var diagram = new Grid2D<int>(Enumerable.Range(0, height).Select(_ => Enumerable.Range(0, width).Select(__ => 0)));
 
             foreach (var line in lines)
             {
@@ -72,7 +73,7 @@ namespace _2021
                 {
                     for (var i = line.Item1.Y; i <= line.Item2.Y; i++)
                     {
-                        diagram[i][line.Item1.X]++;
+                        diagram.AtRef(line.Item1.X, i)++;
                     }
                     continue;
                 }
@@ -80,26 +81,26 @@ namespace _2021
                 {
                     for (var i = line.Item1.X; i <= line.Item2.X; i++)
                     {
-                        diagram[line.Item1.Y][i]++;
+                        diagram.AtRef(i, line.Item1.Y)++;
                     }
                     continue;
                 }
-                var j = line.Item1.X;
+                var x = line.Item1.X;
                 if (line.Item1.Y < line.Item2.Y)
                 {
-                    for (var i = line.Item1.Y; i <= line.Item2.Y; i++)
+                    for (var y = line.Item1.Y; y <= line.Item2.Y; y++)
                     {
-                        diagram[i][j]++;
-                        j++;
+                        diagram.AtRef(x, y)++;
+                        x++;
                     }
                     continue;
                 }
                 else
                 {
-                    for (var i = line.Item1.Y; i >= line.Item2.Y; i--)
+                    for (var y = line.Item1.Y; y >= line.Item2.Y; y--)
                     {
-                        diagram[i][j]++;
-                        j++;
+                        diagram.AtRef(x, y)++;
+                        x++;
                     }
                     continue;
                 }
@@ -107,21 +108,14 @@ namespace _2021
             return diagram;
         }
 
-        private class Point
-        {
-            public int X;
-            public int Y;
-            public override string ToString() => $"{X},{Y}";
-        }
-
-        private static IEnumerable<(Point, Point)> ParseInput(string[] input)
+        private static IEnumerable<(Coordinates2D, Coordinates2D)> ParseInput(string[] input)
         {
             return input.Select(l =>
             {
                 var points = l.Split("->")
                               .SelectMany(x => x.Trim().Split(',').Select(int.Parse))
                               .Chunk(2)
-                              .Select(c => new Point { X = c.First(), Y = c.Last() })
+                              .Select(c => new Coordinates2D { X = c.First(), Y = c.Last() })
                               .ToArray();
 
                 var a = points[0];

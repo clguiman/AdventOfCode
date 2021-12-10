@@ -45,12 +45,12 @@ namespace _2021
         }
 
         private static int Part1(Grid2D<int> input) => input
-            .Where(t => input.GetAdjacentLocations(t.x, t.y).All(adjacent => input.At(adjacent.x, adjacent.y) > t.value))
+            .Where(t => input.GetAdjacentOrthogonalLocations(t.x, t.y).All(adjacent => input.At(adjacent.x, adjacent.y) > t.value))
             .Select(t => t.value + 1)
             .Sum();
 
         private static int Part2(Grid2D<int> input) => input
-            .Where(t => input.GetAdjacentLocations(t.x, t.y).All(adjacent => input.At(adjacent.x, adjacent.y) > t.value))
+            .Where(t => input.GetAdjacentOrthogonalLocations(t.x, t.y).All(adjacent => input.At(adjacent.x, adjacent.y) > t.value))
             .Select(t => (t.x, t.y))
             .Select(lowPoint => input.Clone()
                 .BFS(lowPoint,
