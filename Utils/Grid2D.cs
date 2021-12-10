@@ -15,6 +15,10 @@
 
         public IEnumerable<T> Items => Enumerate().Select(t => t.value);
 
+        public IEnumerable<IEnumerable<T>> Rows => EnumerateRows().Select(row => row.Select(x => x.value));
+
+        public IEnumerable<IEnumerable<T>> Columns => EnumerateColumns().Select(col => col.Select(x => x.value));
+
         public IEnumerable<(int x, int y, T value)> Enumerate()
         {
             for (var y = 0; y < Height; y++)
@@ -23,6 +27,22 @@
                 {
                     yield return (x, y, _grid[y][x]);
                 }
+            }
+        }
+
+        public IEnumerable<IEnumerable<(int x, int y, T value)>> EnumerateRows()
+        {
+            for (var y = 0; y < Height; y++)
+            {
+                yield return Enumerable.Range(0, Width).Select(x => (x, y, _grid[y][x]));
+            }
+        }
+
+        public IEnumerable<IEnumerable<(int x, int y, T value)>> EnumerateColumns()
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                yield return Enumerable.Range(0, Height).Select(y => (x, y, _grid[y][x]));
             }
         }
 
