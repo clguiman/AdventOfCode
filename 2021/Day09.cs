@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using Utils;
 using Xunit;
@@ -46,43 +45,20 @@ namespace _2021
         }
 
         private static int Part1(Grid2D<int> input) => input
-            .EnumerateWithAdjacentValues()
-            .Where(x => x.adjacentValues.All(adjacent => adjacent > x.currentValue))
-            .Select(x => x.currentValue + 1)
+            .Where(t => input.GetAdjacentLocations(t.x, t.y).All(adjacent => input.At(adjacent.x, adjacent.y) > t.value))
+            .Select(t => t.value + 1)
             .Sum();
 
-        private static int Part2(Grid2D<int> input) => FindLowPoints(input)
+        private static int Part2(Grid2D<int> input) => input
+            .Where(t => input.GetAdjacentLocations(t.x, t.y).All(adjacent => input.At(adjacent.x, adjacent.y) > t.value))
+            .Select(t => (t.x, t.y))
             .Select(lowPoint => input.Clone()
                 .BFS(lowPoint,
                     shouldWalkPredicate: (t) => t.possibleAdjacentItem != 9 && t.possibleAdjacentItem > t.currentItem,
                     markVisitedFunc: (_) => int.MinValue)
-                .Enumerate()
                 .Count(x => x == int.MinValue))
             .OrderByDescending(x => x)
             .Take(3)
             .Aggregate((a, b) => a * b);
-
-        private static IEnumerable<(int x, int y)> FindLowPoints(Grid2D<int> input)
-        {
-            for (var i = 0; i < input.Height; i++)
-            {
-                for (var j = 0; j < input.Width; j++)
-                {
-                    bool isLowPoint = true;
-                    foreach (var (x, y) in input.GetAdjacentLocations(j, i))
-                    {
-                        if (input.At(x, y) <= input.At(j, i))
-                        {
-                            isLowPoint = false;
-                            break;
-                        }
-                    }
-                    if (isLowPoint)
-                    {
-                        yield return (j, i);
-                    }
-                }
-            }
-        }
     }
 }

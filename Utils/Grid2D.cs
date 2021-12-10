@@ -13,13 +13,15 @@
 
         public int Height { get; init; }
 
-        public IEnumerable<T> Enumerate()
+        public IEnumerable<T> Items => Enumerate().Select(t => t.value);
+
+        public IEnumerable<(int x, int y, T value)> Enumerate()
         {
             for (var y = 0; y < Height; y++)
             {
                 for (var x = 0; x < Width; x++)
                 {
-                    yield return _grid[y][x];
+                    yield return (x, y, _grid[y][x]);
                 }
             }
         }
@@ -72,17 +74,6 @@
                 nextSteps = newPositions.Distinct().ToList();
             }
             return this;
-        }
-
-        public IEnumerable<(T currentValue, IEnumerable<T> adjacentValues)> EnumerateWithAdjacentValues()
-        {
-            for (var y = 0; y < Height; y++)
-            {
-                for (var x = 0; x < Width; x++)
-                {
-                    yield return (_grid[y][x], GetAdjacentLocations(x, y).Select(t => _grid[t.y][t.x]));
-                }
-            }
         }
 
         private readonly T[][] _grid;
