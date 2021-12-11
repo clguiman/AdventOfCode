@@ -129,7 +129,7 @@ namespace Utils
                 {
                     var curItem = At(curX, curY);
                     newPositions.AddRange(
-                        useOnlyOrthogonalWalking ? GetAdjacentOrthogonalLocations(curX, curY) : GetAllAdjacentLocations(curX, curY)
+                        (useOnlyOrthogonalWalking ? GetAdjacentOrthogonalLocations(curX, curY) : GetAllAdjacentLocations(curX, curY))
                         .Where(t => shouldWalkPredicate.Invoke((curItem, At(t.x, t.y))))
                         );
 
@@ -150,7 +150,7 @@ namespace Utils
         public override string ToString()
         {
             var sb = new StringBuilder();
-            foreach(var line in _grid )
+            foreach (var line in _grid)
             {
                 foreach (var item in line)
                 {

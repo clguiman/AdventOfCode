@@ -10,38 +10,38 @@ namespace _2021
         [Fact]
         public void Test1()
         {
-            Assert.Equal(15, Part1(new(new[] {
+            Assert.Equal(15, Part1(new[] {
                 "2199943210",
                 "3987894921",
                 "9856789892",
                 "8767896789",
                 "9899965678"
-            }.Select(line => line.Select(c => (int)c - (int)'0')))));
+            }.AsDigitGrid()));
         }
 
         [Fact]
         public void Test2()
         {
-            Assert.Equal(575, Part1(new(File.ReadAllLines("input/day09.txt").Select(line => line.Select(c => (int)c - (int)'0')))));
+            Assert.Equal(575, Part1(File.ReadAllLines("input/day09.txt").AsDigitGrid()));
         }
 
 
         [Fact]
         public void Test3()
         {
-            Assert.Equal(1134, Part2(new(new[] {
+            Assert.Equal(1134, Part2(new[] {
                 "2199943210",
                 "3987894921",
                 "9856789892",
                 "8767896789",
                 "9899965678"
-            }.Select(line => line.Select(c => (int)c - (int)'0')))));
+            }.AsDigitGrid()));
         }
 
         [Fact]
         public void Test4()
         {
-            Assert.Equal(1019700, Part2(new(File.ReadAllLines("input/day09.txt").Select(line => line.Select(c => (int)c - (int)'0')))));
+            Assert.Equal(1019700, Part2(File.ReadAllLines("input/day09.txt").AsDigitGrid()));
         }
 
         private static int Part1(Grid2D<int> input) => input
@@ -55,7 +55,8 @@ namespace _2021
             .Select(lowPoint => input.Clone()
                 .BFS(lowPoint,
                     shouldWalkPredicate: (t) => t.possibleAdjacentItem != 9 && t.possibleAdjacentItem > t.currentItem,
-                    markVisitedFunc: (_) => int.MinValue)
+                    markVisitedFunc: (_) => int.MinValue,
+                    useOnlyOrthogonalWalking: true)
                 .Count(x => x == int.MinValue))
             .OrderByDescending(x => x)
             .Take(3)
