@@ -1,4 +1,6 @@
-﻿namespace Utils
+﻿using System.Text;
+
+namespace Utils
 {
     public class Grid2D<T>
     {
@@ -77,9 +79,49 @@
             }
         }
 
-        public Grid2D<T> BFS((int x, int y) initialPosition, Predicate<(T currentItem, T possibleAdjacentItem)> shouldWalkPredicate, Func<T, T> markVisitedFunc)
+        public IEnumerable<(int x, int y)> GetAllAdjacentLocations(int locationX, int locationY)
         {
-            List<(int x, int y)> nextSteps = new() { initialPosition };
+            if (locationY > 0)
+            {
+                yield return (locationX, locationY - 1);
+
+                if (locationX > 0)
+                {
+                    yield return (locationX - 1, locationY - 1);
+                }
+                if (locationX < Width - 1)
+                {
+                    yield return (locationX + 1, locationY - 1);
+                }
+            }
+
+            if (locationY < Height - 1)
+            {
+                yield return (locationX, locationY + 1);
+                if (locationX > 0)
+                {
+                    yield return (locationX - 1, locationY + 1);
+                }
+                if (locationX < Width - 1)
+                {
+                    yield return (locationX + 1, locationY + 1);
+                }
+            }
+
+            if (locationX > 0)
+            {
+                yield return (locationX - 1, locationY);
+            }
+
+            if (locationX < Width - 1)
+            {
+                yield return (locationX + 1, locationY);
+            }
+        }
+
+        public Grid2D<T> BFS((int x, int y) initialPosition, Predicate<(T currentItem, T possibleAdjacentItem)> shouldWalkPredicate, Func<T, T> markVisitedFunc, bool useOnlyOrthogonalWalking, bool allowReWalk = false)
+        {
+            List<(int x, int y)> nextSteps = new[] { initialPosition }.ToList();
             while (nextSteps.Count > 0)
             {
                 var newPositions = new List<(int x, int y)>();
@@ -87,15 +129,37 @@
                 {
                     var curItem = At(curX, curY);
                     newPositions.AddRange(
-                        GetAdjacentOrthogonalLocations(curX, curY)
+                        useOnlyOrthogonalWalking ? GetAdjacentOrthogonalLocations(curX, curY) : GetAllAdjacentLocations(curX, curY)
                         .Where(t => shouldWalkPredicate.Invoke((curItem, At(t.x, t.y))))
                         );
 
                     _grid[curY][curX] = markVisitedFunc(_grid[curY][curX]);
                 }
-                nextSteps = newPositions.Distinct().ToList();
+                if (allowReWalk)
+                {
+                    nextSteps = newPositions.ToList();
+                }
+                else
+                {
+                    nextSteps = newPositions.Distinct().ToList();
+                }
             }
             return this;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            foreach(var line in _grid )
+            {
+                foreach (var item in line)
+                {
+                    sb.Append(item);
+                    sb.Append(' ');
+                }
+                sb.AppendLine();
+            }
+            return sb.ToString();
         }
 
         private readonly T[][] _grid;

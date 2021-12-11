@@ -13,5 +13,9 @@
         public static int Count<TSource>(this Grid2D<TSource> source, Func<(int x, int y, TSource value), bool> predicate) => source.Enumerate().Count(predicate);
 
         public static int Count<TSource>(this Grid2D<TSource> source, Func<TSource, bool> predicate) => source.Items.Count(predicate);
+
+        public static IEnumerable<int> AsDigits(this string source) => source.Select(x => x - '0');
+
+        public static Grid2D<int> AsDigitGrid(this IEnumerable<string> source) => new(source.Select(line => line.AsDigits()));
     }
 }
