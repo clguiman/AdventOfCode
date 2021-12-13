@@ -4,6 +4,13 @@ namespace Utils
 {
     public class Grid2D<T>
     {
+        public Grid2D(int width, int height)
+        {
+           _grid = Enumerable.Range(0, height).Select(_ => new T[width]).ToArray();
+            Width = width;
+            Height = height;
+        }
+
         public Grid2D(IEnumerable<IEnumerable<T>> input)
         {
             _grid = input.Select(l => l.ToArray()).ToArray();
