@@ -12,8 +12,8 @@ namespace _2019
     {
         public interface IAsyncIO
         {
-            public Task<long> ReadAsync(CancellationToken cts);
-            public Task WriteAsync(long value, CancellationToken cts);
+            public Task<long> ReadAsync(CancellationToken cancellationToken);
+            public Task WriteAsync(long value, CancellationToken cancellationToken);
         }
 
         public IntCodeEmulator(long[] memory, bool useLargeMemoryMode = false, bool resetable = false)
@@ -51,12 +51,12 @@ namespace _2019
             new JoinableTaskFactory(new JoinableTaskContext()).Run(async () => await RunAsync(io, default));
         }
 
-        public async Task RunAsync(IAsyncIO io, CancellationToken cts)
+        public async Task RunAsync(IAsyncIO io, CancellationToken cancellationToken)
         {
             long instructionPtr = 0;
             while (instructionPtr < memory.Length)
             {
-                if (cts.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested)
                 {
                     return;
                 }
@@ -73,10 +73,10 @@ namespace _2019
                         WriteOperand(destination, opCode.Param3Mode, ReadOperand(operand1, opCode.Param1Mode) * ReadOperand(operand2, opCode.Param2Mode));
                         break;
                     case OpCode.ReadInput:
-                        WriteOperand(operand1, opCode.Param1Mode, await io.ReadAsync(cts));
+                        WriteOperand(operand1, opCode.Param1Mode, await io.ReadAsync(cancellationToken));
                         break;
                     case OpCode.WriteOutput:
-                        await io.WriteAsync(ReadOperand(operand1, opCode.Param1Mode), cts);
+                        await io.WriteAsync(ReadOperand(operand1, opCode.Param1Mode), cancellationToken);
                         break;
                     case OpCode.LessThan:
                         WriteOperand(destination, opCode.Param3Mode, ReadOperand(operand1, opCode.Param1Mode) < ReadOperand(operand2, opCode.Param2Mode) ? 1 : 0);
@@ -201,9 +201,9 @@ namespace _2019
                 input = inputQueue;
                 output = outputQueue;
             }
-            public Task<long> ReadAsync(CancellationToken cts) => input.DequeueAsync(cts);
+            public Task<long> ReadAsync(CancellationToken cancellationToken) => input.DequeueAsync(cancellationToken);
 
-            public Task WriteAsync(long value, CancellationToken cts)
+            public Task WriteAsync(long value, CancellationToken cancellationToken)
             {
                 output.Enqueue(value);
                 return Task.FromResult(true);
@@ -223,9 +223,9 @@ namespace _2019
                 input = readFunc;
                 output = writeFunc;
             }
-            public Task<long> ReadAsync(CancellationToken cts) => Task.FromResult(input());
+            public Task<long> ReadAsync(CancellationToken cancellationToken) => Task.FromResult(input());
 
-            public Task WriteAsync(long value, CancellationToken cts)
+            public Task WriteAsync(long value, CancellationToken cancellationToken)
             {
                 output(value);
                 return Task.FromResult(false);
@@ -246,9 +246,9 @@ namespace _2019
                 output = writeFunc;
             }
 
-            public Task<long> ReadAsync(CancellationToken cts) => input();
+            public Task<long> ReadAsync(CancellationToken cancellationToken) => input();
 
-            public Task WriteAsync(long value, CancellationToken cts) => output(value);
+            public Task WriteAsync(long value, CancellationToken cancellationToken) => output(value);
 
             private readonly OnRead input;
             private readonly OnWrite output;
@@ -322,9 +322,9 @@ namespace _2019
     {
         public interface IAsyncIO
         {
-            public Task<string> ReadAsync(CancellationToken cts);
-            public Task WriteAsync(string value, CancellationToken cts);
-            public Task WriteNonASCIIAsync(long value, CancellationToken cts);
+            public Task<string> ReadAsync(CancellationToken cancellationToken);
+            public Task WriteAsync(string value, CancellationToken cancellationToken);
+            public Task WriteNonASCIIAsync(long value, CancellationToken cancellationToken);
         }
 
         public ASCIIComputer(long[] memory, bool useLargeMemoryMode = false, bool resetable = false)
@@ -337,7 +337,7 @@ namespace _2019
             _emulator.Reset();
         }
 
-        public async Task RunAsync(IAsyncIO io, CancellationToken cts)
+        public async Task RunAsync(IAsyncIO io, CancellationToken cancellationToken)
         {
             string curReadLine = string.Empty;
             int curLineIdx = 0;
@@ -347,7 +347,7 @@ namespace _2019
                 {
                     if (curLineIdx >= curReadLine.Length)
                     {
-                        curReadLine = (await io.ReadAsync(cts)) + "\n";
+                        curReadLine = (await io.ReadAsync(cancellationToken)) + "\n";
                         curLineIdx = 1;
                         return curReadLine[0];
                     }
@@ -357,19 +357,19 @@ namespace _2019
                 {
                     if (value == '\n')
                     {
-                        await io.WriteAsync(curWriteLine.ToString(), cts);
+                        await io.WriteAsync(curWriteLine.ToString(), cancellationToken);
                         curWriteLine.Clear();
                     }
                     else if (value < 32 || value > 126)
                     {
-                        await io.WriteNonASCIIAsync(value, cts);
+                        await io.WriteNonASCIIAsync(value, cancellationToken);
                     }
                     else
                     {
                         curWriteLine.Append((char)value);
                     }
                 }
-            ), cts);
+            ), cancellationToken);
         }
 
         public void WriteMemory(long address, long value) => _emulator.WriteMemory(address, value);
@@ -386,15 +386,15 @@ namespace _2019
                 output = writeFunc;
                 outputNonASCII = writeNonASCIIFunc;
             }
-            public Task<string> ReadAsync(CancellationToken cts) => Task.FromResult(input());
+            public Task<string> ReadAsync(CancellationToken cancellationToken) => Task.FromResult(input());
 
-            public Task WriteAsync(string value, CancellationToken cts)
+            public Task WriteAsync(string value, CancellationToken cancellationToken)
             {
                 output(value);
                 return Task.FromResult(false);
             }
 
-            public Task WriteNonASCIIAsync(long value, CancellationToken cts)
+            public Task WriteNonASCIIAsync(long value, CancellationToken cancellationToken)
             {
                 outputNonASCII(value);
                 return Task.FromResult(false);
