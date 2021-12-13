@@ -27,7 +27,7 @@ namespace _2019
         [Fact]
         public async Task Part1TestAsync()
         {
-            var emulator = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
+            var emulator = new ASCIIComputer(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
             Assert.Equal(4864, Part1(await GetPhotoAsync(emulator)));
         }
 
@@ -57,7 +57,7 @@ namespace _2019
         [Fact]
         public async Task Part2TestAsync()
         {
-            var emulator = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
+            var emulator = new ASCIIComputer(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
             var photo = await GetPhotoAsync(emulator);
             /*
             photo:
@@ -123,10 +123,11 @@ namespace _2019
                 "A,B,A,C,B,A,C,B,A,C",
                 "L,6,L,4,R,12",
                 "L,6,R,12,R,12,L,8",
-                "L,6,L,10,L,10,L,6"
-            }.Aggregate((a, b) => a + '\n' + b) + "\nn\n";
+                "L,6,L,10,L,10,L,6",
+                "n",
+            };
 
-            var emulator2 = new IntCodeEmulator(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
+            var emulator2 = new ASCIIComputer(File.ReadAllText("input/day17.txt").Split(',').Select(long.Parse).ToArray());
             emulator2.WriteMemory(0, 2);
 
             var instructionIdx = 0;
@@ -134,44 +135,37 @@ namespace _2019
 
             StringBuilder sb = new StringBuilder();
 
-            await emulator2.RunAsync(new IntCodeEmulator.SyncIO(
-                () =>
+            await emulator2.RunAsync(new ASCIIComputer.SyncIO(
+                () => instructions[instructionIdx++],
+                (_) => {},
+                (longValue) =>
                 {
-                    return instructions[instructionIdx++];
-                },
-                (value) =>
-                {
-                    dustCount = (int)value;
+                    dustCount = (int)longValue;
                 }
             ), default);
 
             Assert.Equal(840248, dustCount);
         }
 
-        private static async Task<string[]> GetPhotoAsync(IntCodeEmulator robot)
+        private static async Task<string[]> GetPhotoAsync(ASCIIComputer robot)
         {
-            List<StringBuilder> rawOutput = new();
-            rawOutput.Add(new());
+            List<string> rawOutput = new();
 
-            await robot.RunAsync(new IntCodeEmulator.SyncIO(
+            await robot.RunAsync(new ASCIIComputer.SyncIO(
                 () =>
                 {
-                    return 0;
+                    return string.Empty;
                 },
-                (value) =>
+                (line) =>
                 {
-                    if (value == 10)
-                    {
-                        rawOutput.Add(new());
-                    }
-                    else
-                    {
-                        rawOutput[rawOutput.Count - 1].Append((char)value);
-                    }
+                    rawOutput.Add(line);
+                },
+                (longVal) =>
+                {
                 }
             ), default);
 
-            return rawOutput.Where(sb => sb.Length > 0).Select(sb => sb.ToString()).ToArray();
+            return rawOutput.Where(line => !string.IsNullOrEmpty(line)).ToArray();
         }
 
         private static int Part1(string[] photo)

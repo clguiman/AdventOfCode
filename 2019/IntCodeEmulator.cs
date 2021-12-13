@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -232,13 +234,32 @@ namespace _2019
             private readonly OnRead input;
             private readonly OnWrite output;
         }
+
+        public sealed class AsyncIO : IAsyncIO
+        {
+            public delegate Task<long> OnRead();
+            public delegate Task OnWrite(long value);
+
+            public AsyncIO(OnRead readFunc, OnWrite writeFunc)
+            {
+                input = readFunc;
+                output = writeFunc;
+            }
+
+            public Task<long> ReadAsync(CancellationToken cts) => input();
+
+            public Task WriteAsync(long value, CancellationToken cts) => output(value);
+
+            private readonly OnRead input;
+            private readonly OnWrite output;
+        }
     }
 
     internal class InfiniteMemory<T>
     {
         public InfiniteMemory(T[] memory, bool useLargeMemoryMode = false, bool resetable = false)
         {
-            this._contigousMemory = new T[useLargeMemoryMode ?  1024 * 1024 : memory.Length];
+            this._contigousMemory = new T[useLargeMemoryMode ? 1024 * 1024 : memory.Length];
             memory.CopyTo(this._contigousMemory, 0);
             if (resetable)
             {
@@ -295,5 +316,95 @@ namespace _2019
         private readonly T[] _bkpMemory;
 
         private readonly Dictionary<long, T> _sparseMemory;
+    }
+
+    internal class ASCIIComputer
+    {
+        public interface IAsyncIO
+        {
+            public Task<string> ReadAsync(CancellationToken cts);
+            public Task WriteAsync(string value, CancellationToken cts);
+            public Task WriteNonASCIIAsync(long value, CancellationToken cts);
+        }
+
+        public ASCIIComputer(long[] memory, bool useLargeMemoryMode = false, bool resetable = false)
+        {
+            _emulator = new IntCodeEmulator(memory, useLargeMemoryMode, resetable);
+        }
+
+        public void Reset()
+        {
+            _emulator.Reset();
+        }
+
+        public async Task RunAsync(IAsyncIO io, CancellationToken cts)
+        {
+            string curReadLine = string.Empty;
+            int curLineIdx = 0;
+            StringBuilder curWriteLine = new();
+            await _emulator.RunAsync(new IntCodeEmulator.AsyncIO(
+                async () =>
+                {
+                    if (curLineIdx >= curReadLine.Length)
+                    {
+                        curReadLine = (await io.ReadAsync(cts)) + "\n";
+                        curLineIdx = 1;
+                        return curReadLine[0];
+                    }
+                    return curReadLine[curLineIdx++];
+                },
+                async (value) =>
+                {
+                    if (value == '\n')
+                    {
+                        await io.WriteAsync(curWriteLine.ToString(), cts);
+                        curWriteLine.Clear();
+                    }
+                    else if (value < 32 || value > 126)
+                    {
+                        await io.WriteNonASCIIAsync(value, cts);
+                    }
+                    else
+                    {
+                        curWriteLine.Append((char)value);
+                    }
+                }
+            ), cts);
+        }
+
+        public void WriteMemory(long address, long value) => _emulator.WriteMemory(address, value);
+
+        public sealed class SyncIO : IAsyncIO
+        {
+            public delegate string OnRead();
+            public delegate void OnWrite(string value);
+            public delegate void OnWriteNonASCII(long value);
+
+            public SyncIO(OnRead readFunc, OnWrite writeFunc, OnWriteNonASCII writeNonASCIIFunc)
+            {
+                input = readFunc;
+                output = writeFunc;
+                outputNonASCII = writeNonASCIIFunc;
+            }
+            public Task<string> ReadAsync(CancellationToken cts) => Task.FromResult(input());
+
+            public Task WriteAsync(string value, CancellationToken cts)
+            {
+                output(value);
+                return Task.FromResult(false);
+            }
+
+            public Task WriteNonASCIIAsync(long value, CancellationToken cts)
+            {
+                outputNonASCII(value);
+                return Task.FromResult(false);
+            }
+
+            private readonly OnRead input;
+            private readonly OnWrite output;
+            private readonly OnWriteNonASCII outputNonASCII;
+        }
+
+        private readonly IntCodeEmulator _emulator;
     }
 }
