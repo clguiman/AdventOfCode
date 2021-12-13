@@ -24,7 +24,6 @@ namespace _2019
 
         private static async Task<long> Part1Async(ASCIIComputer droid)
         {
-            //#####.#..########
             var commands = new[] {
                 "NOT C J",
                 "AND D J",
