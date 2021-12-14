@@ -7,6 +7,34 @@ namespace Utils
 
         public static Graph<TNode, object?> AsUnweightedUnidirectional(IEnumerable<(TNode origin, TNode destination)> input) => BuildUnweighted(input, false);
 
+        public Graph()
+        {
+        }
+
+        public void AddEdge(TNode src, TNode dest, TEdge edge, Predicate<TEdge> shouldReplaceEdgePredicate)
+        {
+            if (!_edges.ContainsKey(src))
+            {
+                _edges.Add(src, new() { { dest, edge } });
+            }
+            else
+            {
+                var srcNode = _edges[src];
+                if (srcNode.TryGetValue(dest, out var curEdge))
+                {
+                    if (shouldReplaceEdgePredicate(curEdge))
+                    {
+                        _edges[src][dest] = edge;
+                    }
+                    return;
+                }
+                _edges[src][dest] = edge;
+            }
+        }
+
+        public IEnumerable<(TNode origin, TNode destination, TEdge edge)> Edges =>
+                _edges.SelectMany(o => o.Value.Select(d => (d.Key, d.Value)).Select(t => (o.Key, t.Item1, t.Item2)));
+
         public IEnumerable<TPath> DFS<TPath, TUser>(
             TNode start,
             TNode end,
@@ -90,6 +118,6 @@ namespace Utils
             _edges = edges ?? throw new ArgumentNullException(nameof(edges));
         }
 
-        private readonly Dictionary<TNode, Dictionary<TNode, TEdge>> _edges;
+        private readonly Dictionary<TNode, Dictionary<TNode, TEdge>> _edges = new();
     }
 }

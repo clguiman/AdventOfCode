@@ -90,6 +90,7 @@ namespace _2021
                     octopuses.BFS(flashingPos,
                             shouldWalkPredicate: t => (t.currentItem == 9) && t.possibleAdjacentItem >= 1 && t.possibleAdjacentItem <= 9,
                             markVisitedFunc: (x) => (x == 0 || x == 9) ? 0 : x + 1,
+                            onNextLevel: (_) => { },
                             useOnlyOrthogonalWalking: false,
                             allowReWalk: true);
                 }

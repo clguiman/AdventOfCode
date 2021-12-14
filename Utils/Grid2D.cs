@@ -66,6 +66,8 @@ namespace Utils
 
         public Grid2D<T> Clone() => new(_grid);
 
+        public Grid2D<TResult> Clone<TResult>(Func<IEnumerable<T>, IEnumerable<TResult>> selector) => new(_grid.Select(selector));
+
         public IEnumerable<(int x, int y)> GetAdjacentOrthogonalLocations(int locationX, int locationY)
         {
             if (locationY > 0)
@@ -118,11 +120,18 @@ namespace Utils
             }
         }
 
-        public Grid2D<T> BFS((int x, int y) initialPosition, Predicate<(T currentItem, T possibleAdjacentItem)> shouldWalkPredicate, Func<T, T> markVisitedFunc, bool useOnlyOrthogonalWalking, bool allowReWalk = false)
+        public Grid2D<T> BFS(
+            (int x, int y) initialPosition,
+            Predicate<(T currentItem, T possibleAdjacentItem)> shouldWalkPredicate,
+            Func<T, T> markVisitedFunc,
+            Action<IEnumerable<(int x, int y)>> onNextLevel,
+            bool useOnlyOrthogonalWalking,
+            bool allowReWalk = false)
         {
             List<(int x, int y)> nextSteps = new[] { initialPosition }.ToList();
             while (nextSteps.Count > 0)
             {
+                onNextLevel(nextSteps);
                 var newPositions = new List<(int x, int y)>();
                 foreach (var (curX, curY) in nextSteps)
                 {
