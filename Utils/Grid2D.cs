@@ -6,7 +6,7 @@ namespace Utils
     {
         public Grid2D(int width, int height)
         {
-           _grid = Enumerable.Range(0, height).Select(_ => new T[width]).ToArray();
+            _grid = Enumerable.Range(0, height).Select(_ => new T[width]).ToArray();
             Width = width;
             Height = height;
         }
@@ -88,10 +88,13 @@ namespace Utils
 
         public IEnumerable<(int x, int y)> GetAllAdjacentLocations(int locationX, int locationY)
         {
+            foreach (var loc in GetAdjacentOrthogonalLocations(locationX, locationY))
+            {
+                yield return loc;
+            }
+
             if (locationY > 0)
             {
-                yield return (locationX, locationY - 1);
-
                 if (locationX > 0)
                 {
                     yield return (locationX - 1, locationY - 1);
@@ -104,7 +107,6 @@ namespace Utils
 
             if (locationY < Height - 1)
             {
-                yield return (locationX, locationY + 1);
                 if (locationX > 0)
                 {
                     yield return (locationX - 1, locationY + 1);
@@ -113,16 +115,6 @@ namespace Utils
                 {
                     yield return (locationX + 1, locationY + 1);
                 }
-            }
-
-            if (locationX > 0)
-            {
-                yield return (locationX - 1, locationY);
-            }
-
-            if (locationX < Width - 1)
-            {
-                yield return (locationX + 1, locationY);
             }
         }
 

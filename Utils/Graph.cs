@@ -2,8 +2,6 @@
 {
     public class Graph<TNode> where TNode : notnull
     {
-
-
         public static Graph<TNode> AsDirected(IEnumerable<(TNode origin, TNode destination)> input) => Build(input, true);
 
         public static Graph<TNode> AsUnidirectional(IEnumerable<(TNode origin, TNode destination)> input) => Build(input, false);
@@ -13,8 +11,7 @@
             TNode end,
             Predicate<(TNode currentItem, TNode possibleAdjacentItem)> shouldWalkPredicate,
             Predicate<(IPath<TNode, TUser> currentPath, TNode currentItem, TNode possibleAdjacentItem)> shouldReWalkPredicate) where TPath : class, IPath<TNode, TUser>, new()
-             =>
-                    DFSInternal(start, end, shouldWalkPredicate, shouldReWalkPredicate, new TPath());
+             => DFSInternal(start, end, shouldWalkPredicate, shouldReWalkPredicate, new TPath());
 
         private IEnumerable<TPath> DFSInternal<TPath, TUser>(
             TNode start,
@@ -51,8 +48,7 @@
 
         private static TPath ClonePath<TPath, TUser>(TPath path) where TPath : class, IPath<TNode, TUser>, new()
         {
-            var clone = path.Clone() as TPath;
-            if (clone == null)
+            if (path.Clone() is not TPath clone)
             {
                 throw new Exception($"{nameof(TPath)}.Clone should return a {nameof(TPath)} object");
             }
@@ -63,25 +59,25 @@
         {
             var edges = new Dictionary<TNode, HashSet<TNode>>();
 
-            foreach (var edge in input)
+            foreach (var (origin, destination) in input)
             {
-                if (edges.ContainsKey(edge.origin))
+                if (edges.ContainsKey(origin))
                 {
-                    edges[edge.origin].Add(edge.destination);
+                    edges[origin].Add(destination);
                 }
                 else
                 {
-                    edges.Add(edge.origin, new() { edge.destination });
+                    edges.Add(origin, new() { destination });
                 }
                 if (isDirected)
                 {
-                    if (edges.ContainsKey(edge.destination))
+                    if (edges.ContainsKey(destination))
                     {
-                        edges[edge.destination].Add(edge.origin);
+                        edges[destination].Add(origin);
                     }
                     else
                     {
-                        edges.Add(edge.destination, new() { edge.origin });
+                        edges.Add(destination, new() { origin });
                     }
                 }
             }
