@@ -1,23 +1,24 @@
-﻿namespace Utils
+﻿
+namespace Utils
 {
-    public class Graph<TNode> where TNode : notnull
+    public class Graph<TNode, TEdge> where TNode : notnull
     {
-        public static Graph<TNode> AsDirected(IEnumerable<(TNode origin, TNode destination)> input) => Build(input, true);
+        public static Graph<TNode, object?> AsUnweightedDirected(IEnumerable<(TNode origin, TNode destination)> input) => BuildUnweighted(input, true);
 
-        public static Graph<TNode> AsUnidirectional(IEnumerable<(TNode origin, TNode destination)> input) => Build(input, false);
+        public static Graph<TNode, object?> AsUnweightedUnidirectional(IEnumerable<(TNode origin, TNode destination)> input) => BuildUnweighted(input, false);
 
         public IEnumerable<TPath> DFS<TPath, TUser>(
             TNode start,
             TNode end,
-            Predicate<(TNode currentItem, TNode possibleAdjacentItem)> shouldWalkPredicate,
-            Predicate<(IPath<TNode, TUser> currentPath, TNode currentItem, TNode possibleAdjacentItem)> shouldReWalkPredicate) where TPath : class, IPath<TNode, TUser>, new()
+            Predicate<(TNode currentItem, TNode possibleAdjacentItem, TEdge edge)> shouldWalkPredicate,
+            Predicate<(IPath<TNode, TUser> currentPath, TNode currentItem, TNode possibleAdjacentItem, TEdge edge)> shouldReWalkPredicate) where TPath : class, IPath<TNode, TUser>, new()
              => DFSInternal(start, end, shouldWalkPredicate, shouldReWalkPredicate, new TPath());
 
         private IEnumerable<TPath> DFSInternal<TPath, TUser>(
             TNode start,
             TNode end,
-            Predicate<(TNode currentItem, TNode possibleAdjacentItem)> shouldWalkPredicate,
-            Predicate<(IPath<TNode, TUser> currentPath, TNode currentItem, TNode possibleAdjacentItem)> shouldReWalkPredicate,
+            Predicate<(TNode currentItem, TNode possibleAdjacentItem, TEdge edge)> shouldWalkPredicate,
+            Predicate<(IPath<TNode, TUser> currentPath, TNode currentItem, TNode possibleAdjacentItem, TEdge edge)> shouldReWalkPredicate,
             TPath visitedPath) where TPath : class, IPath<TNode, TUser>, new()
         {
             if (Equals(start, end))
@@ -27,7 +28,7 @@
                 return new[] { startPath };
             }
 
-            var nextDestinations = _edges[start].Where(x => shouldWalkPredicate((start, x)));
+            var nextDestinations = _edges[start].Where(x => shouldWalkPredicate((start, x.Key, x.Value)));
             List<TPath> retPaths = new();
 
             foreach (var next in nextDestinations)
@@ -35,11 +36,11 @@
                 var curPath = ClonePath<TPath, TUser>(visitedPath);
                 curPath.Add(start);
 
-                if (visitedPath.Contains(next) && !shouldReWalkPredicate((curPath, start, next)))
+                if (visitedPath.Contains(next.Key) && !shouldReWalkPredicate((curPath, start, next.Key, next.Value)))
                 {
                     continue;
                 }
-                var results = DFSInternal(next, end, shouldWalkPredicate, shouldReWalkPredicate, curPath).ToArray();
+                var results = DFSInternal(next.Key, end, shouldWalkPredicate, shouldReWalkPredicate, curPath).ToArray();
 
                 retPaths.AddRange(results.Select(r => { var tmp = ClonePath<TPath, TUser>(curPath); tmp.Add(r); return tmp; }));
             }
@@ -55,40 +56,40 @@
             return clone;
         }
 
-        private static Graph<TNode> Build(IEnumerable<(TNode origin, TNode destination)> input, bool isDirected)
+        private static Graph<TNode, object?> BuildUnweighted(IEnumerable<(TNode origin, TNode destination)> input, bool isDirected)
         {
-            var edges = new Dictionary<TNode, HashSet<TNode>>();
+            var edges = new Dictionary<TNode, Dictionary<TNode, object?>>();
 
             foreach (var (origin, destination) in input)
             {
                 if (edges.ContainsKey(origin))
                 {
-                    edges[origin].Add(destination);
+                    edges[origin].Add(destination, null);
                 }
                 else
                 {
-                    edges.Add(origin, new() { destination });
+                    edges.Add(origin, new() { { destination, null } });
                 }
                 if (isDirected)
                 {
                     if (edges.ContainsKey(destination))
                     {
-                        edges[destination].Add(origin);
+                        edges[destination].Add(origin, null);
                     }
                     else
                     {
-                        edges.Add(destination, new() { origin });
+                        edges.Add(destination, new() { { origin, null } });
                     }
                 }
             }
             return new(edges);
         }
 
-        private Graph(Dictionary<TNode, HashSet<TNode>> edges)
+        private Graph(Dictionary<TNode, Dictionary<TNode, TEdge>> edges)
         {
             _edges = edges ?? throw new ArgumentNullException(nameof(edges));
         }
 
-        private Dictionary<TNode, HashSet<TNode>> _edges;
+        private readonly Dictionary<TNode, Dictionary<TNode, TEdge>> _edges;
     }
 }
