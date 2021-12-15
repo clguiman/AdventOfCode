@@ -33,7 +33,9 @@ namespace Utils
         }
 
         public IEnumerable<(TNode origin, TNode destination, TEdge edge)> Edges =>
-                _edges.SelectMany(o => o.Value.Select(d => (d.Key, d.Value)).Select(t => (o.Key, t.Item1, t.Item2)));
+                _edges.SelectMany(o => o.Value.Select(d => (d.Key, d.Value)).Select(t => (o.Key, t.Key, t.Value)));
+
+        public IEnumerable<TNode> Nodes => _edges.Keys;
 
         public IEnumerable<TPath> DFS<TPath, TUser>(
             TNode start,
@@ -73,6 +75,46 @@ namespace Utils
                 retPaths.AddRange(results.Select(r => { var tmp = ClonePath<TPath, TUser>(curPath); tmp.Add(r); return tmp; }));
             }
             return retPaths;
+        }
+
+        public Dictionary<TNode, long> Dijkstra(TNode originNode, Func<TEdge, long> edgeLengthFunc)
+        {
+            var dist = new Dictionary<TNode, long>
+            {
+                [originNode] = 0
+            };
+            var prev = new Dictionary<TNode, (bool defined, TNode node)>();
+
+            var queue = new PriorityQueue<TNode, long>();
+
+            foreach (var curNode in Nodes)
+            {
+                if (!Equals(originNode, curNode))
+                {
+                    dist[curNode] = long.MaxValue;
+                    prev[curNode] = (false, curNode);
+                }
+                queue.Enqueue(curNode, dist[curNode]);
+            }
+
+            while (queue.Count > 0)
+            {
+                var nextNode = queue.Dequeue();
+
+                foreach (var neighbor in _edges[nextNode])
+                {
+                    var edgeLenght = edgeLengthFunc(neighbor.Value);
+                    var alt = (edgeLenght == long.MaxValue) ? long.MaxValue : (dist[nextNode] + edgeLenght);
+                    if (alt < dist[neighbor.Key])
+                    {
+                        dist[neighbor.Key] = alt;
+                        prev[neighbor.Key] = (true, nextNode);
+                        queue.Enqueue(neighbor.Key, alt);
+                    }
+                }
+            }
+
+            return dist;
         }
 
         private static TPath ClonePath<TPath, TUser>(TPath path) where TPath : class, IPath<TNode, TUser>, new()
