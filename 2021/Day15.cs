@@ -105,7 +105,7 @@ namespace _2021
                             var newVal = map.At(x, y) + xStep + yStep;
                             if (newVal > 9)
                             {
-                                newVal = (newVal % 9);
+                                newVal %= 9;
                             }
                             largerMap.SetAt(newVal, xStep * map.Width + x, yStep * map.Height + y);
                         }
