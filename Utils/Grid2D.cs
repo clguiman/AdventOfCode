@@ -122,7 +122,7 @@ namespace Utils
 
         public Grid2D<T> BFS(
             (int x, int y) initialPosition,
-            Predicate<(T currentItem, T possibleAdjacentItem)> shouldWalkPredicate,
+            Predicate<(T currentItem, T possibleAdjacentItem, int currentItemX, int currentItemY, int possibleAdjacentItemX, int possibleAdjacentItemY)> shouldWalkPredicate,
             Func<T, T> markVisitedFunc,
             Action<IEnumerable<(int x, int y)>> onNextLevel,
             bool useOnlyOrthogonalWalking,
@@ -138,7 +138,7 @@ namespace Utils
                     var curItem = At(curX, curY);
                     newPositions.AddRange(
                         (useOnlyOrthogonalWalking ? GetAdjacentOrthogonalLocations(curX, curY) : GetAllAdjacentLocations(curX, curY))
-                        .Where(t => shouldWalkPredicate.Invoke((curItem, At(t.x, t.y))))
+                        .Where(t => shouldWalkPredicate.Invoke((curItem, At(t.x, t.y), curX, curY, t.x, t.y)))
                         );
 
                     _grid[curY][curX] = markVisitedFunc(_grid[curY][curX]);
