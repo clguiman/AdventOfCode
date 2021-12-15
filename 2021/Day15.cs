@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Linq;
 using Utils;
 using Xunit;
 
@@ -53,28 +52,9 @@ namespace _2021
             Assert.Equal(2897, Part2(File.ReadAllLines("input/day15.txt").AsDigitGrid()));
         }
 
-        private static long Solve1(Grid2D<int> map)
-        {
-            Grid2D<long> costMap = new(Enumerable.Range(0, map.Height).Select(_ => Enumerable.Range(0, map.Width).Select(__ => long.MaxValue)));
-            costMap.SetAt(0, 0, 0);
-
-            map.BFS((0, 0), shouldWalkPredicate: (t) =>
-                 {
-                     var possibleNewCost = costMap.At(t.current.x, t.current.y) + t.possibleAdjacent.item;
-                     var currentCost = costMap.At(t.possibleAdjacent.x, t.possibleAdjacent.y);
-                     if (possibleNewCost < currentCost)
-                     {
-                         costMap.SetAt(possibleNewCost, t.possibleAdjacent.x, t.possibleAdjacent.y);
-                         return true;
-                     }
-                     return false;
-                 },
-                markVisitedFunc: t => t,
-                useOnlyOrthogonalWalking: true,
-                allowReWalk: false
-            );
-            return costMap.At(costMap.Width - 1, costMap.Height - 1);
-        }
+        private static long Solve1(Grid2D<int> map) => map
+            .ComputeWalkCost((0, 0), _ => true, _ => { }, (_, next) => next, true)
+            .At(map.Width - 1, map.Height - 1);
 
         private static long Part2(Grid2D<int> map)
         {

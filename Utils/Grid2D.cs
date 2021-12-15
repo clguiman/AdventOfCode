@@ -145,7 +145,7 @@ namespace Utils
                 HashSet<(int x, int y)> nextSteps = new() { initialPosition };
                 while (nextSteps.Count > 0)
                 {
-                    var newPositions = new HashSet<(int x, int y)>();
+                    var newPositions = new HashSet<(int x, int y)>(2 * nextSteps.Count);
                     RunStep(nextSteps, t => newPositions.UnionWith(t));
                     nextSteps = newPositions;
                 }
@@ -155,12 +155,46 @@ namespace Utils
                 List<(int x, int y)> nextSteps = new[] { initialPosition }.ToList();
                 while (nextSteps.Count > 0)
                 {
-                    var newPositions = new List<(int x, int y)>();
+                    var newPositions = new List<(int x, int y)>(2 * nextSteps.Count);
                     RunStep(nextSteps, t => newPositions.AddRange(t));
                     nextSteps = newPositions;
                 }
             }
             return this;
+        }
+
+        public Grid2D<long> ComputeWalkCost(
+            (int x, int y) initialPosition,
+            Predicate<((T item, int x, int y) current, (T item, int x, int y) possibleAdjacent)> shouldWalkPredicate,
+            Action<((T item, int x, int y) current, (T item, int x, int y) next)> onWalkNext,
+            Func<T, T, long> walkCostFunc,
+            bool useOnlyOrthogonalWalking)
+        {
+            Grid2D<long> costMap = new(Enumerable.Range(0, Height).Select(_ => Enumerable.Range(0, Width).Select(__ => long.MaxValue)));
+            costMap.SetAt(0, initialPosition.x, initialPosition.y);
+
+            BFS(initialPosition, shouldWalkPredicate: (t) =>
+            {
+                if (!shouldWalkPredicate(t))
+                {
+                    return false;
+                }
+                var possibleNewCost = costMap.At(t.current.x, t.current.y) + walkCostFunc(t.current.item, t.possibleAdjacent.item);
+                var currentCost = costMap.At(t.possibleAdjacent.x, t.possibleAdjacent.y);
+                if (possibleNewCost < currentCost)
+                {
+                    costMap.SetAt(possibleNewCost, t.possibleAdjacent.x, t.possibleAdjacent.y);
+
+                    onWalkNext(t);
+
+                    return true;
+                }
+                return false;
+            },
+            markVisitedFunc: t => t,
+            useOnlyOrthogonalWalking,
+            allowReWalk: false);
+            return costMap;
         }
 
         public override string ToString()
