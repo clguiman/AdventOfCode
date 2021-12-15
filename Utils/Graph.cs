@@ -30,6 +30,10 @@ namespace Utils
                 }
                 _edges[src][dest] = edge;
             }
+            if (!_edges.ContainsKey(dest))
+            {
+                _edges.Add(dest, new());
+            }
         }
 
         public IEnumerable<(TNode origin, TNode destination, TEdge edge)> Edges =>
@@ -77,13 +81,35 @@ namespace Utils
             return retPaths;
         }
 
-        public Dictionary<TNode, long> Dijkstra(TNode originNode, Func<TEdge, long> edgeLengthFunc)
+        public Dictionary<TNode, long> Dijkstra(TNode originNode, Func<TEdge, long> edgeLengthFunc) => DijkstraWithPrevMap(originNode, edgeLengthFunc).costMap;
+
+        public (IEnumerable<TNode> path, long cost) FindShortestPath(TNode originNode, TNode destination, Func<TEdge, long> edgeLengthFunc)
+        {
+            var (costMap, prevMap) = DijkstraWithPrevMap(originNode, edgeLengthFunc);
+            if (!prevMap.ContainsKey(destination))
+            {
+                throw new Exception("There's no path to the destination");
+            }
+
+            List<TNode> retPath = new();
+            var curNode = destination;
+            while (!curNode.Equals(originNode))
+            {
+                retPath.Add(curNode);
+                curNode = prevMap[curNode];
+            }
+
+            retPath.Reverse();
+            return (retPath, costMap[destination]);
+        }
+
+        private (Dictionary<TNode, long> costMap, Dictionary<TNode, TNode> prevMap) DijkstraWithPrevMap(TNode originNode, Func<TEdge, long> edgeLengthFunc)
         {
             var dist = new Dictionary<TNode, long>
             {
                 [originNode] = 0
             };
-            var prev = new Dictionary<TNode, (bool defined, TNode node)>();
+            var prev = new Dictionary<TNode, TNode>();
 
             var queue = new PriorityQueue<TNode, long>();
 
@@ -92,7 +118,6 @@ namespace Utils
                 if (!Equals(originNode, curNode))
                 {
                     dist[curNode] = long.MaxValue;
-                    prev[curNode] = (false, curNode);
                 }
                 queue.Enqueue(curNode, dist[curNode]);
             }
@@ -103,18 +128,18 @@ namespace Utils
 
                 foreach (var neighbor in _edges[nextNode])
                 {
-                    var edgeLenght = edgeLengthFunc(neighbor.Value);
-                    var alt = (edgeLenght == long.MaxValue) ? long.MaxValue : (dist[nextNode] + edgeLenght);
+                    var edgeLength = edgeLengthFunc(neighbor.Value);
+                    var alt = (edgeLength == long.MaxValue || dist[nextNode] == long.MaxValue) ? long.MaxValue : (dist[nextNode] + edgeLength);
                     if (alt < dist[neighbor.Key])
                     {
                         dist[neighbor.Key] = alt;
-                        prev[neighbor.Key] = (true, nextNode);
+                        prev[neighbor.Key] = nextNode;
                         queue.Enqueue(neighbor.Key, alt);
                     }
                 }
             }
 
-            return dist;
+            return (dist, prev);
         }
 
         private static TPath ClonePath<TPath, TUser>(TPath path) where TPath : class, IPath<TNode, TUser>, new()
