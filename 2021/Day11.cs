@@ -88,9 +88,8 @@ namespace _2021
                 foreach (var flashingPos in flashingPositions)
                 {
                     octopuses.BFS(flashingPos,
-                            shouldWalkPredicate: t => (t.currentItem == 9) && t.possibleAdjacentItem >= 1 && t.possibleAdjacentItem <= 9,
+                            shouldWalkPredicate: t => (t.current.item == 9) && t.possibleAdjacent.item >= 1 && t.possibleAdjacent.item <= 9,
                             markVisitedFunc: (x) => (x == 0 || x == 9) ? 0 : x + 1,
-                            onNextLevel: (_) => { },
                             useOnlyOrthogonalWalking: false,
                             allowReWalk: true);
                 }

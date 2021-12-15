@@ -54,9 +54,8 @@ namespace _2021
             .Select(t => (t.x, t.y))
             .Select(lowPoint => input.Clone()
                 .BFS(lowPoint,
-                    shouldWalkPredicate: (t) => t.possibleAdjacentItem != 9 && t.possibleAdjacentItem > t.currentItem,
+                    shouldWalkPredicate: (t) => t.possibleAdjacent.item != 9 && t.possibleAdjacent.item > t.current.item,
                     markVisitedFunc: (_) => int.MinValue,
-                    onNextLevel: (_) => { },
                     useOnlyOrthogonalWalking: true)
                 .Count(x => x == int.MinValue))
             .OrderByDescending(x => x)

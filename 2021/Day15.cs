@@ -60,17 +60,16 @@ namespace _2021
 
             map.BFS((0, 0), shouldWalkPredicate: (t) =>
                  {
-                     var possibleNewCost = costMap.At(t.currentItemX, t.currentItemY) + t.possibleAdjacentItem;
-                     var currentCost = costMap.At(t.possibleAdjacentItemX, t.possibleAdjacentItemY);
+                     var possibleNewCost = costMap.At(t.current.x, t.current.y) + t.possibleAdjacent.item;
+                     var currentCost = costMap.At(t.possibleAdjacent.x, t.possibleAdjacent.y);
                      if (possibleNewCost < currentCost)
                      {
-                         costMap.SetAt(possibleNewCost, t.possibleAdjacentItemX, t.possibleAdjacentItemY);
+                         costMap.SetAt(possibleNewCost, t.possibleAdjacent.x, t.possibleAdjacent.y);
                          return true;
                      }
                      return false;
                  },
                 markVisitedFunc: t => t,
-                onNextLevel: _ => { },
                 useOnlyOrthogonalWalking: true,
                 allowReWalk: false
             );

@@ -122,34 +122,39 @@ namespace Utils
 
         public Grid2D<T> BFS(
             (int x, int y) initialPosition,
-            Predicate<(T currentItem, T possibleAdjacentItem, int currentItemX, int currentItemY, int possibleAdjacentItemX, int possibleAdjacentItemY)> shouldWalkPredicate,
+            Predicate<((T item, int x, int y) current, (T item, int x, int y) possibleAdjacent)> shouldWalkPredicate,
             Func<T, T> markVisitedFunc,
-            Action<IEnumerable<(int x, int y)>> onNextLevel,
             bool useOnlyOrthogonalWalking,
             bool allowReWalk = false)
         {
-            List<(int x, int y)> nextSteps = new[] { initialPosition }.ToList();
-            while (nextSteps.Count > 0)
+
+            void RunStep(IEnumerable<(int x, int y)> nextSteps, Action<IEnumerable<(int x, int y)>> pickNextStepsFunc)
             {
-                onNextLevel(nextSteps);
-                var newPositions = new List<(int x, int y)>();
                 foreach (var (curX, curY) in nextSteps)
                 {
                     var curItem = At(curX, curY);
-                    newPositions.AddRange(
+                    pickNextStepsFunc(
                         (useOnlyOrthogonalWalking ? GetAdjacentOrthogonalLocations(curX, curY) : GetAllAdjacentLocations(curX, curY))
-                        .Where(t => shouldWalkPredicate.Invoke((curItem, At(t.x, t.y), curX, curY, t.x, t.y)))
+                            .Where(t => shouldWalkPredicate.Invoke(((curItem, curX, curY), (At(t.x, t.y), t.x, t.y))))
                         );
-
                     _grid[curY][curX] = markVisitedFunc(_grid[curY][curX]);
                 }
-                if (allowReWalk)
+            };
+
+            List<(int x, int y)> nextSteps = new[] { initialPosition }.ToList();
+            while (nextSteps.Count > 0)
+            {
+                if (!allowReWalk)
                 {
+                    var newPositions = new HashSet<(int x, int y)>();
+                    RunStep(nextSteps, t => newPositions.UnionWith(t));
                     nextSteps = newPositions.ToList();
                 }
                 else
                 {
-                    nextSteps = newPositions.Distinct().ToList();
+                    var newPositions = new List<(int x, int y)>();
+                    RunStep(nextSteps, t => newPositions.AddRange(t));
+                    nextSteps = newPositions;
                 }
             }
             return this;
