@@ -140,17 +140,20 @@ namespace Utils
                     _grid[curY][curX] = markVisitedFunc(_grid[curY][curX]);
                 }
             };
-
-            List<(int x, int y)> nextSteps = new[] { initialPosition }.ToList();
-            while (nextSteps.Count > 0)
+            if (!allowReWalk)
             {
-                if (!allowReWalk)
+                HashSet<(int x, int y)> nextSteps = new() { initialPosition };
+                while (nextSteps.Count > 0)
                 {
                     var newPositions = new HashSet<(int x, int y)>();
                     RunStep(nextSteps, t => newPositions.UnionWith(t));
-                    nextSteps = newPositions.ToList();
+                    nextSteps = newPositions;
                 }
-                else
+            }
+            else
+            {
+                List<(int x, int y)> nextSteps = new[] { initialPosition }.ToList();
+                while (nextSteps.Count > 0)
                 {
                     var newPositions = new List<(int x, int y)>();
                     RunStep(nextSteps, t => newPositions.AddRange(t));
