@@ -11,163 +11,103 @@ namespace _2021
         [Fact]
         public void Test1()
         {
-            Assert.Equal(6, Part1("D2FE28"));
+            Assert.Equal(6, Solve("D2FE28").Version);
         }
 
         [Fact]
         public void Test2()
         {
-            Assert.Equal(16, Part1("8A004A801A8002F478"));
+            Assert.Equal(16, Solve("8A004A801A8002F478").Version);
         }
 
         [Fact]
         public void Test3()
         {
-            Assert.Equal(12, Part1("620080001611562C8802118E34"));
+            Assert.Equal(12, Solve("620080001611562C8802118E34").Version);
         }
 
         [Fact]
         public void Test4()
         {
-            Assert.Equal(23, Part1("C0015000016115A2E0802F182340"));
+            Assert.Equal(23, Solve("C0015000016115A2E0802F182340").Version);
         }
 
         [Fact]
         public void Test5()
         {
-            Assert.Equal(31, Part1("A0016C880162017C3686B18A3D4780"));
+            Assert.Equal(31, Solve("A0016C880162017C3686B18A3D4780").Version);
         }
 
         [Fact]
         public void Test6()
         {
-            Assert.Equal(979, Part1(File.ReadAllText("input/day16.txt")));
+            Assert.Equal(979, Solve(File.ReadAllText("input/day16.txt")).Version);
         }
 
         [Fact]
         public void Test7()
         {
-            Assert.Equal(3, Part2("C200B40A82"));
+            Assert.Equal(3, Solve("C200B40A82").Value);
         }
 
         [Fact]
         public void Test8()
         {
-            Assert.Equal(54, Part2("04005AC33890"));
+            Assert.Equal(54, Solve("04005AC33890").Value);
         }
 
         [Fact]
         public void Test9()
         {
-            Assert.Equal(7, Part2("880086C3E88112"));
+            Assert.Equal(7, Solve("880086C3E88112").Value);
         }
 
         [Fact]
         public void Test10()
         {
-            Assert.Equal(9, Part2("CE00C43D881120"));
+            Assert.Equal(9, Solve("CE00C43D881120").Value);
         }
 
         [Fact]
         public void Test11()
         {
-            Assert.Equal(1, Part2("D8005AC2A8F0"));
+            Assert.Equal(1, Solve("D8005AC2A8F0").Value);
         }
 
         [Fact]
         public void Test12()
         {
-            Assert.Equal(0, Part2("F600BC2D8F"));
+            Assert.Equal(0, Solve("F600BC2D8F").Value);
         }
 
         [Fact]
         public void Test13()
         {
-            Assert.Equal(0, Part2("9C005AC2F8F0"));
+            Assert.Equal(0, Solve("9C005AC2F8F0").Value);
         }
 
         [Fact]
         public void Test14()
         {
-            Assert.Equal(1, Part2("9C0141080250320F1802104A08"));
+            Assert.Equal(1, Solve("9C0141080250320F1802104A08").Value);
         }
 
         [Fact]
         public void Test15()
         {
-            Assert.Equal(277110354175, Part2(File.ReadAllText("input/day16.txt")));
+            Assert.Equal(277110354175, Solve(File.ReadAllText("input/day16.txt")).Value);
         }
 
-        private static int Part1(string input)
+        private static LiteralPacket Solve(string input)
         {
-            var sum = 0;
-            var bits = input.SelectMany(BitsFromHexDigit).ToArray();
-
-            int availableData = bits.Length;
-            IEnumerable<ushort> curBits = bits;
-            bool isMoreDataAvailable;
-            do
-            {
-                (curBits, var bitsRead, var packet) = Packet.ReadPacket(bits, availableData);
-                availableData -= bitsRead;
-                sum += GetVersionSum(packet);
-
-                isMoreDataAvailable = (availableData > 6);
-            } while (isMoreDataAvailable);
-
-            return sum;
-        }
-        private static int GetVersionSum(Packet p)
-        {
-            if (p == null)
-            {
-                return 0;
-            }
-            if (p is OperatorPacket opPacket)
-            {
-                return p.Version + opPacket.SubPackets.Select(GetVersionSum).Sum();
-            }
-
-            return p.Version;
-        }
-
-        private static long Part2(string input)
-        {
-            var bits = input.SelectMany(BitsFromHexDigit).ToArray();
+            var bits = input.SelectMany(hexDigit =>
+                {
+                    var n = Convert.ToUInt16(string.Concat(hexDigit), 16);
+                    return new[] { (ushort)((n & 0x8) >> 3), (ushort)((n & 0x4) >> 2), (ushort)((n & 0x2) >> 1), (ushort)(n & 0x1) };
+                }).ToArray();
 
             (_, _, var root) = Packet.ReadPacket(bits, bits.Length);
-            while (root.Type != Packet.PacketType.Literal)
-            {
-                root = ResolveLeafOperations(root);
-            }
-
-            return (root as LiteralPacket).Value;
-        }
-
-        private static Packet ResolveLeafOperations(Packet root)
-        {
-            if (root is OperatorPacket opPacket)
-            {
-                if (opPacket.SubPackets.All(s => s is LiteralPacket))
-                {
-                    return opPacket.ComputeOperation();
-                }
-                opPacket.ReplaceSubPackets(opPacket.SubPackets.Select(ResolveLeafOperations).ToList());
-                return opPacket;
-            }
-            return root;
-        }
-
-        private static IEnumerable<ushort> BitsFromHexDigit(char hexDigit)
-        {
-            var n = Convert.ToUInt16(string.Concat(hexDigit), 16);
-            var ret = new ushort[4];
-            for (var i = 3; i >= 0; i--)
-            {
-                ret[i] = (ushort)(n & 0x1);
-                n >>= 1;
-            }
-            return ret;
+            return root.Solve();
         }
 
         private class Packet
@@ -189,7 +129,7 @@ namespace _2021
 
             public static (IEnumerable<ushort> leftoverSequence, int bitsRead, Packet packet) ReadPacket(IEnumerable<ushort> bits, int maxLength)
             {
-                if (maxLength < 6)
+                if (maxLength < 11)
                 {
                     return (Enumerable.Empty<ushort>(), maxLength, null);
                 }
@@ -209,6 +149,31 @@ namespace _2021
                 }
 
                 return (curBits, bitsRead, packet);
+            }
+
+            public LiteralPacket Solve()
+            {
+                var root = this;
+                while (root.Type != PacketType.Literal)
+                {
+                    root = ResolveLeafOperations(root);
+                }
+
+                return root as LiteralPacket;
+            }
+
+            private static Packet ResolveLeafOperations(Packet root)
+            {
+                if (root is OperatorPacket opPacket)
+                {
+                    if (opPacket.SubPackets.All(s => s is LiteralPacket))
+                    {
+                        return opPacket.ComputeOperation();
+                    }
+                    opPacket.ReplaceSubPackets(opPacket.SubPackets.Select(ResolveLeafOperations).ToList());
+                    return opPacket;
+                }
+                return root;
             }
 
             protected static int NumberFromBits(IEnumerable<ushort> bits)
@@ -251,11 +216,6 @@ namespace _2021
                 curBits = curBits.Skip(1);
                 bitsRead += 1;
 
-                if (bitsRead >= maxLength)
-                {
-                    return (Enumerable.Empty<ushort>(), maxLength, null);
-                }
-
                 if (hasLengthInBits)
                 {
                     var subPacketsLength = NumberFromBits(curBits.Take(15));
@@ -265,14 +225,9 @@ namespace _2021
                     List<Packet> subPackets = new();
                     do
                     {
-                        (curBits, var subPacketSize, var subPacket) = Packet.ReadPacket(curBits, subPacketsLength);
+                        (curBits, var subPacketSize, var subPacket) = ReadPacket(curBits, subPacketsLength);
                         subPacketsLength -= subPacketSize;
                         bitsRead += subPacketSize;
-                        if (subPacket == null)
-                        {
-                            return (Enumerable.Empty<ushort>(), maxLength, null);
-                        }
-
                         subPackets.Add(subPacket);
 
                     } while (subPacketsLength > 0);
@@ -289,11 +244,6 @@ namespace _2021
                     for (var idx = 0; idx < subPacketCount; idx++)
                     {
                         (curBits, var subPacketSize, var subPacket) = ReadPacket(curBits, maxLength - bitsRead);
-                        if (subPacket == null)
-                        {
-                            return (Enumerable.Empty<ushort>(), maxLength, null);
-                        }
-
                         subPackets.Add(subPacket);
                         bitsRead += subPacketSize;
                     }
@@ -304,16 +254,17 @@ namespace _2021
 
             public LiteralPacket ComputeOperation()
             {
+                var ver = Version + SubPackets.Sum(s => s.Version);
                 switch (Type)
                 {
                     case PacketType.Sum:
-                        return LiteralPacket.FromNumber(SubPackets.Select(s => (s as LiteralPacket).Value).Sum());
+                        return new(ver, SubPackets.Select(s => (s as LiteralPacket).Value).Sum());
                     case PacketType.Product:
-                        return LiteralPacket.FromNumber(SubPackets.Select(s => (s as LiteralPacket).Value).Aggregate((a, b) => a * b));
+                        return new(ver, SubPackets.Select(s => (s as LiteralPacket).Value).Aggregate((a, b) => a * b));
                     case PacketType.Min:
-                        return LiteralPacket.FromNumber(SubPackets.Select(s => (s as LiteralPacket).Value).Min());
+                        return new(ver, SubPackets.Select(s => (s as LiteralPacket).Value).Min());
                     case PacketType.Max:
-                        return LiteralPacket.FromNumber(SubPackets.Select(s => (s as LiteralPacket).Value).Max());
+                        return new(ver, SubPackets.Select(s => (s as LiteralPacket).Value).Max());
                     case PacketType.Gt:
                     case PacketType.Lt:
                     case PacketType.Eq:
@@ -322,15 +273,15 @@ namespace _2021
                             var b = (SubPackets[1] as LiteralPacket).Value;
                             if (Type == PacketType.Gt)
                             {
-                                return LiteralPacket.FromNumber(a > b ? 1 : 0);
+                                return new(ver, a > b ? 1 : 0);
                             }
                             else if (Type == PacketType.Lt)
                             {
-                                return LiteralPacket.FromNumber(a < b ? 1 : 0);
+                                return new(ver, a < b ? 1 : 0);
                             }
                             else
                             {
-                                return LiteralPacket.FromNumber(a == b ? 1 : 0);
+                                return new(ver, a == b ? 1 : 0);
                             }
 
                         }
@@ -352,8 +303,6 @@ namespace _2021
         private class LiteralPacket : Packet
         {
             public long Value { get; }
-
-            public static LiteralPacket FromNumber(long n) => new(0, n);
 
             public static (IEnumerable<ushort> leftoverSequence, int bitsRead, LiteralPacket packet) ReadLiteralPacket(IEnumerable<ushort> bits)
             {
@@ -387,7 +336,7 @@ namespace _2021
                 return (curBits, bitsRead, new LiteralPacket(ver, value >> 4));
             }
 
-            private LiteralPacket(int version, long value) : base(version, PacketType.Literal)
+            public LiteralPacket(int version, long value) : base(version, PacketType.Literal)
             {
                 Value = value;
             }
