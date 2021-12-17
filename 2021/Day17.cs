@@ -11,6 +11,7 @@ namespace _2021
         public void Test1()
         {
             Assert.Equal(45, Part1(ParseInput("target area: x=20..30, y=-10..-5")));
+            Assert.Equal(66, Part1(ParseInput("target area: x=352..377, y=-49..-30")));
         }
 
         [Fact]
@@ -33,8 +34,8 @@ namespace _2021
 
         private static long Part1(Area targetArea) =>
             Enumerable.Range((int)Math.Sqrt(2 * targetArea.X1),
-                             (int)Math.Sqrt(2 * targetArea.X2) - (int)Math.Sqrt(2 * targetArea.X1))
-                .SelectMany(x => Enumerable.Range(0, 200)
+                             (int)Math.Sqrt(2 * targetArea.X2) - (int)Math.Sqrt(2 * targetArea.X1) + 1)
+                .SelectMany(x => Enumerable.Range(0, Math.Abs(targetArea.Y1))
                     .Select(y => RunSimulation(x, y, targetArea)))
                 .Max();
 
@@ -42,9 +43,9 @@ namespace _2021
             Enumerable.Range((int)Math.Sqrt(2 * targetArea.X1), targetArea.X2 - (int)Math.Sqrt(2 * targetArea.X1) + 1)
                 .SelectMany(x => Enumerable.Range(targetArea.Y1, Math.Abs(targetArea.Y1) - targetArea.Y1)
                     .Select(y => RunSimulation(x, y, targetArea)))
-                .Count(x => x != int.MinValue);
+                .Count(x => x != long.MinValue);
 
-        private static int RunSimulation(int vX, int vY, Area targetArea)
+        private static long RunSimulation(int vX, int vY, Area targetArea)
         {
             var x = 0;
             var y = 0;
@@ -73,7 +74,7 @@ namespace _2021
                 }
                 vY--;
             }
-            return int.MinValue;
+            return long.MinValue;
         }
 
         private static Area ParseInput(string input)
