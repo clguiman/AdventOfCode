@@ -109,7 +109,48 @@ namespace _2021
 
         private static (List<Vec3> resolvedPoints, Vec3 offset) ResolveScanner2RelativeToScanner1(List<Vec3> scanner1, List<Vec3> scanner2)
         {
-            List<Vec3> ret = new();
+            var (Scanner1Point1, Scanner1Point2, Scanner2Point1, Scanner2Point2) = GetTwoCommonPoints(scanner1, scanner2);
+            if (Scanner1Point1.Equals(Vec3.Invalid))
+            {
+                //Not enough common distances to compute
+                return (new List<Vec3>(), Vec3.Zero);
+            }
+
+            var pointsInScanner1 = new[] { Scanner1Point1, Scanner1Point2 };
+            var pointsInScanner2 = new[] { Scanner2Point1, Scanner2Point2 };
+
+            Grid2D<int> rotationTransform = null;
+            Vec3 offsetTransform = null;
+            foreach (var possibleRotation in Vec3.UnitRotations)
+            {
+                Vec3 firstPossibleOffset = pointsInScanner1[0].Substract(pointsInScanner2[0].Rotate(possibleRotation));
+                Vec3 secondPossibleOffset = pointsInScanner1[1].Substract(pointsInScanner2[1].Rotate(possibleRotation));
+                if (firstPossibleOffset.Equals(secondPossibleOffset))
+                {
+                    // found rotation and offset
+                    rotationTransform = possibleRotation;
+                    offsetTransform = firstPossibleOffset;
+                    break;
+                }
+            }
+
+            if (rotationTransform == null)
+            {
+                return (new List<Vec3>(), Vec3.Zero);
+            }
+
+            HashSet<Vec3> beconsInScanner1Reference = scanner1.ToHashSet();
+            foreach (var beacon in scanner2)
+            {
+                beconsInScanner1Reference.Add(beacon.Rotate(rotationTransform).Add(offsetTransform));
+            }
+            return (beconsInScanner1Reference.ToList(), offsetTransform);
+        }
+
+        private static (Vec3 Scanner1Point1, Vec3 Scanner1Point2, Vec3 Scanner2Point1, Vec3 Scanner2Point2) GetTwoCommonPoints(
+            List<Vec3> scanner1,
+            List<Vec3> scanner2)
+        {
             var uniqueDistances = new Dictionary<long, (int x, int y)>[2];
             var scannerIdx = 0;
             foreach (var beacons in new[] { scanner1, scanner2 })
@@ -144,68 +185,25 @@ namespace _2021
             if (commonDistances.Count < 2)
             {
                 //Not enough common distances to compute
-                return (new List<Vec3>(), Vec3.Zero);
-            }
-            var commonPoints = GetNormalizedCommonPoints(commonDistances, scanner1, scanner2);
-            if (commonPoints.Length == 0)
-            {
-                //Not enough common distances to compute
-                return (new List<Vec3>(), Vec3.Zero);
+                return (Vec3.Invalid, Vec3.Invalid, Vec3.Invalid, Vec3.Invalid);
             }
 
-            var pointsInScanner1 = new[] { commonPoints[0].Scanner1Point1, commonPoints[0].Scanner1Point2 };
-            var pointsInScanner2 = new[] { commonPoints[0].Scanner2Point1, commonPoints[0].Scanner2Point2 };
-
-            Grid2D<int> rotationTransform = null;
-            Vec3 offsetTransform = null;
-            foreach (var possibleRotation in Vec3.UnitRotations)
-            {
-                Vec3 firstPossibleOffset = pointsInScanner1[0].Substract(pointsInScanner2[0].Rotate(possibleRotation));
-                Vec3 secondPossibleOffset = pointsInScanner1[1].Substract(pointsInScanner2[1].Rotate(possibleRotation));
-                if (firstPossibleOffset.Equals(secondPossibleOffset))
-                {
-                    // found rotation and offset
-                    rotationTransform = possibleRotation;
-                    offsetTransform = firstPossibleOffset;
-                    break;
-                }
-            }
-
-            if (rotationTransform == null)
-            {
-                return (new List<Vec3>(), Vec3.Zero);
-            }
-
-            HashSet<Vec3> beconsInScanner1Reference = scanner1.ToHashSet();
-            foreach (var beacon in scanner2)
-            {
-                beconsInScanner1Reference.Add(beacon.Rotate(rotationTransform).Add(offsetTransform));
-            }
-            return (beconsInScanner1Reference.ToList(), offsetTransform);
-        }
-
-        private static (Vec3 Scanner1Point1, Vec3 Scanner1Point2, Vec3 Scanner2Point1, Vec3 Scanner2Point2)[]
-            GetNormalizedCommonPoints(
-            HashSet<(int s1Idx1, int s1Idx2, int s2Idx1, int s2Idx2)> commonDistances,
-            List<Vec3> scanner1,
-            List<Vec3> scanner2)
-        {
             (int s1Idx1, int s1Idx2, int s2Idx1, int s2Idx2) ref1;
-            (int s1Idx1, int s1Idx2, int s2Idx1, int s2Idx2)[] commonPoints;
+            (int s1Idx1, int s1Idx2, int s2Idx1, int s2Idx2) ref2;
             var skp = 0;
             do
             {
                 ref1 = commonDistances.Skip(skp).First();
-                commonPoints = commonDistances.Where(t => t.s1Idx1 == ref1.s1Idx1)
+                ref2 = commonDistances.Where(t => t.s1Idx1 == ref1.s1Idx1)
                     .Where(t => t.s1Idx1 != ref1.s1Idx1 || t.s1Idx2 != ref1.s1Idx2 || t.s2Idx1 != ref1.s2Idx1 || t.s2Idx2 != ref1.s2Idx2)
-                    .ToArray();
+                    .Take(1)
+                    .FirstOrDefault((-1, -1, -1, -1));
                 skp++;
-                if (skp >= commonDistances.Count() && commonPoints.Length == 0)
+                if (skp >= commonDistances.Count && ref2.s1Idx1 == -1)
                 {
-                    return Array.Empty<(Vec3 Scanner1Point1, Vec3 Scanner1Point2, Vec3 Scanner2Point1, Vec3 Scanner2Point2)>();
+                    return (Vec3.Invalid, Vec3.Invalid, Vec3.Invalid, Vec3.Invalid);
                 }
-            } while (commonPoints.Length == 0);
-            var ref2 = commonPoints[0];
+            } while (ref2.s1Idx1 == -1);
 
             // make sure ref2 s2Idx1 is the common index in s2
             if (ref1.s2Idx1 != ref2.s2Idx1)
@@ -230,12 +228,7 @@ namespace _2021
                     }
                 }
             }
-
-            // normalize common points
-            return commonPoints
-                .Select(t => (t.s1Idx1, t.s1Idx2, t.s2Idx1 == ref2.s2Idx1 ? t.s2Idx1 : t.s2Idx2, t.s2Idx1 == ref2.s2Idx1 ? t.s2Idx2 : t.s2Idx1))
-                .Select(t => (scanner1[t.s1Idx1], scanner1[t.s1Idx2], scanner2[t.Item3], scanner2[t.Item4]))
-                .ToArray();
+            return (scanner1[ref2.s1Idx1], scanner1[ref2.s1Idx2], scanner2[ref2.s2Idx1], scanner2[ref2.s2Idx2]);
         }
 
         private static List<List<Vec3>> ParseInput(string[] input)
@@ -321,6 +314,8 @@ namespace _2021
             public override string ToString() => $"{{{X},{Y},{Z}}}";
 
             public static Vec3 Zero => new(0, 0, 0);
+
+            public static Vec3 Invalid => new(int.MinValue, int.MinValue, int.MinValue);
 
             private static Grid2D<int>[] ComputeUnitRotations()
             {
