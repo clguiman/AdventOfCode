@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "2020", "2020\2020.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "2021", "2021\2021.csproj", "{71E781CD-421B-410E-A62A-1E9BB66BC9BD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{CA4A96D3-8481-48A4-8ED4-383E595A7233}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utils", "Utils\Utils.csproj", "{CA4A96D3-8481-48A4-8ED4-383E595A7233}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2018", "2018\2018.csproj", "{4A44AD4D-A9FA-4E2A-9F4D-3BA4B35D954A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{CA4A96D3-8481-48A4-8ED4-383E595A7233}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA4A96D3-8481-48A4-8ED4-383E595A7233}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA4A96D3-8481-48A4-8ED4-383E595A7233}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A44AD4D-A9FA-4E2A-9F4D-3BA4B35D954A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A44AD4D-A9FA-4E2A-9F4D-3BA4B35D954A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A44AD4D-A9FA-4E2A-9F4D-3BA4B35D954A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A44AD4D-A9FA-4E2A-9F4D-3BA4B35D954A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
