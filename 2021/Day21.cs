@@ -121,7 +121,7 @@ namespace _2021
             return ret;
         }
 
-        private static int[] PossibleDiracRolls = Enumerable.Range(1, 3)
+        private static readonly int[] PossibleDiracRolls = Enumerable.Range(1, 3)
                                                         .SelectMany(x => Enumerable.Range(1, 3)
                                                                         .SelectMany(y => Enumerable.Range(1, 3)
                                                                                     .Select(z => (x, y, z))))
