@@ -182,7 +182,6 @@ namespace _2021
             }
             lightedCubes = ReduceOverlappingCuboids(lightedCubes);
             return lightedCubes.Select(c => c.Volume).Sum();
-
         }
 
         private static List<Cuboid> ReduceOverlappingCuboidsInternal(List<Cuboid> regions)
@@ -211,17 +210,15 @@ namespace _2021
                             leftover.Add(nl);
                         }
 
-                        // fast break
-                        for (var k = i + 1; k < ret.Count; k++)
-                        //for (var k = i + 1; k < j; k++)
+                        for (var k = i + 1; k < j; k++)
                         {
                             if (k != j)
                             {
                                 leftover.Add(ret[k]);
                             }
                         }
-                        i = ret.Count;
-                        j = ret.Count;
+                        i = j;
+                        break;
                     }
                     if (noIntersectionsFound)
                     {
@@ -233,36 +230,42 @@ namespace _2021
             return ret;
         }
 
-        private static List<Cuboid> ReduceOverlappingCuboids(List<Cuboid> regions, int maxDepth = 20)
+        private static List<Cuboid> ReduceOverlappingCuboids(List<Cuboid> regions, int maxDepth = 25)
         {
             if (regions.Count < 10 || maxDepth <= 0)
             {
                 return ReduceOverlappingCuboidsInternal(regions);
             }
 
-            var agg = regions.ToList();
-            for (var step = 0; step < 50; step++)
+            var reducedCuboids = regions;
+            for (var step = 0; step < 4; step++)
             {
-                var partitionCount = Environment.ProcessorCount;
-                var partitions = Enumerable.Range(0, partitionCount).Select(_ => new List<Cuboid>()).ToArray();
-                for (var idx = 0; idx < agg.Count; idx++)
+                reducedCuboids = (maxDepth % 6) switch
                 {
-                    partitions[idx % partitionCount].Add(agg[idx]);
-                }
+                    0 => reducedCuboids.OrderBy(c => c.X1).ToList(),
+                    1 => reducedCuboids.OrderBy(c => c.X2).ToList(),
+                    2 => reducedCuboids.OrderBy(c => c.Y1).ToList(),
+                    3 => reducedCuboids.OrderBy(c => c.Y2).ToList(),
+                    4 => reducedCuboids.OrderBy(c => c.Z1).ToList(),
+                    _ => reducedCuboids.OrderBy(c => c.Z2).ToList(),
+                };
 
-                var partitions2 = partitions.AsParallel()
-                        .WithExecutionMode(ParallelExecutionMode.ForceParallelism)
-                        .WithDegreeOfParallelism(Environment.ProcessorCount)
-                        .WithMergeOptions(ParallelMergeOptions.NotBuffered)
-                        .Select(p => ReduceOverlappingCuboidsInternal(p)).ToArray();
-                agg.Clear();
-                foreach (var p in partitions2)
+                var partitionCount = 2 * Environment.ProcessorCount;
+                var partitionSize = (reducedCuboids.Count / partitionCount) + 1;
+
+                var partitionedResults = Enumerable.Range(0, partitionCount)
+                                            .Select(idx => reducedCuboids.Skip(idx * partitionSize).Take(partitionSize).ToList())
+                                            .AsParallel()
+                                            .Select(ReduceOverlappingCuboidsInternal)
+                                            .ToArray();
+                reducedCuboids.Clear();
+                foreach (var p in partitionedResults)
                 {
-                    agg.AddRange(p);
+                    reducedCuboids.AddRange(p);
                 }
             }
 
-            return ReduceOverlappingCuboids(agg, maxDepth - 1);
+            return ReduceOverlappingCuboids(reducedCuboids, maxDepth - 1);
         }
 
         private static IEnumerable<CuboidAction> ParseInput(IEnumerable<string> input)
