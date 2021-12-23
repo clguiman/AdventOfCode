@@ -175,12 +175,12 @@ namespace _2021
                             newLights.Add(light);
                             continue;
                         }
-                        newLights.AddRange(light.SplitInNonOverlapingCuboids(intersection));
+                        newLights.AddRange(light.SplitInNonOverlapingCuboids(intersection).nonOverlapingCuboids);
                     }
                     lightedCubes = newLights;
                 }
             }
-            lightedCubes = ReduceOverlappingCuboids(lightedCubes);
+            lightedCubes = ReduceOverlapingCuboids(lightedCubes);
             return lightedCubes.Select(c => c.Volume).Sum();
         }
 
@@ -196,16 +196,16 @@ namespace _2021
                     bool noIntersectionsFound = true;
                     for (var j = i + 1; j < ret.Count; j++)
                     {
-                        var intersection = ret[i].Intersection(ret[j]);
-                        if (intersection.Equals(Cuboid.Zero))
+                        var r = ret[i].SplitInNonOverlapingCuboids(ret[j]);
+                        if (!r.areOverlaping)
                         {
                             continue;
                         }
                         intersectionWasFound = true;
                         noIntersectionsFound = false;
 
-                        leftover.Add(intersection);
-                        foreach (var nl in ret[i].SplitInNonOverlapingCuboids(ret[j]))
+                        leftover.Add(r.intersection);
+                        foreach (var nl in r.nonOverlapingCuboids)
                         {
                             leftover.Add(nl);
                         }
@@ -230,7 +230,7 @@ namespace _2021
             return ret;
         }
 
-        private static List<Cuboid> ReduceOverlappingCuboids(List<Cuboid> regions, int maxDepth = 25)
+        private static List<Cuboid> ReduceOverlapingCuboids(List<Cuboid> regions, int maxDepth = 25)
         {
             if (regions.Count < 10 || maxDepth <= 0)
             {
@@ -265,7 +265,7 @@ namespace _2021
                 }
             }
 
-            return ReduceOverlappingCuboids(reducedCuboids, maxDepth - 1);
+            return ReduceOverlapingCuboids(reducedCuboids, maxDepth - 1);
         }
 
         private static IEnumerable<CuboidAction> ParseInput(IEnumerable<string> input)
@@ -306,14 +306,14 @@ namespace _2021
             public int Z1 { get; }
             public int Z2 { get; }
 
-            public IEnumerable<Cuboid> SplitInNonOverlapingCuboids(Cuboid other)
+            public (bool areOverlaping, Cuboid intersection, IEnumerable<Cuboid> nonOverlapingCuboids) SplitInNonOverlapingCuboids(Cuboid other)
             {
                 var intersection = Intersection(other);
                 if (intersection.Equals(Zero))
                 {
-                    return new[] { this, other };
+                    return (false, Zero, new[] { this, other });
                 }
-                return RemoveInnerCuboid(intersection).Concat(other.RemoveInnerCuboid(intersection));
+                return (true, intersection, RemoveInnerCuboid(intersection).Concat(other.RemoveInnerCuboid(intersection)));
             }
 
             private IEnumerable<Cuboid> RemoveInnerCuboid(Cuboid inner)
