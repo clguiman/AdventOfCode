@@ -102,7 +102,7 @@ namespace _2022
                     candidateSizes.Add(node.Size);
                 }
             });
-            return candidateSizes.Order().First();
+            return candidateSizes.Min();
         }
 
         private static FsNode BuildFileSystem(IEnumerable<string> input)
