@@ -68,56 +68,32 @@ namespace Utils
 
         public Grid2D<TResult> Clone<TResult>(Func<IEnumerable<T>, IEnumerable<TResult>> selector) => new(_grid.Select(selector));
 
-        public IEnumerable<(int x, int y)> GetAdjacentOrthogonalLocations(int locationX, int locationY)
+        public IEnumerable<(int x, int y)> GetAdjacentOrthogonalLocations(int locationX, int locationY) => Grid2D<T>
+                .GenerateAdjacentOrthogonalLocations(locationX, locationY)
+                .Where(t => t.x >= 0 && t.x < Width && t.y >= 0 && t.y < Height);
+
+        public IEnumerable<(int x, int y)> GetAllAdjacentLocations(int locationX, int locationY) => Grid2D<T>
+                .GenerateAllAdjacentLocations(locationX, locationY)
+                .Where(t => t.x >= 0 && t.x < Width && t.y >= 0 && t.y < Height);
+
+        public static IEnumerable<(int x, int y)> GenerateAdjacentOrthogonalLocations(int locationX, int locationY)
         {
-            if (locationY > 0)
-            {
-                yield return (locationX, locationY - 1);
-            }
-            if (locationY < Height - 1)
-            {
-                yield return (locationX, locationY + 1);
-            }
-            if (locationX > 0)
-            {
-                yield return (locationX - 1, locationY);
-            }
-            if (locationX < Width - 1)
-            {
-                yield return (locationX + 1, locationY);
-            }
+            yield return (locationX, locationY - 1);
+            yield return (locationX, locationY + 1);
+            yield return (locationX - 1, locationY);
+            yield return (locationX + 1, locationY);
         }
 
-        public IEnumerable<(int x, int y)> GetAllAdjacentLocations(int locationX, int locationY)
+        public static IEnumerable<(int x, int y)> GenerateAllAdjacentLocations(int locationX, int locationY)
         {
-            foreach (var loc in GetAdjacentOrthogonalLocations(locationX, locationY))
-            {
-                yield return loc;
-            }
-
-            if (locationY > 0)
-            {
-                if (locationX > 0)
-                {
-                    yield return (locationX - 1, locationY - 1);
-                }
-                if (locationX < Width - 1)
-                {
-                    yield return (locationX + 1, locationY - 1);
-                }
-            }
-
-            if (locationY < Height - 1)
-            {
-                if (locationX > 0)
-                {
-                    yield return (locationX - 1, locationY + 1);
-                }
-                if (locationX < Width - 1)
-                {
-                    yield return (locationX + 1, locationY + 1);
-                }
-            }
+            yield return (locationX, locationY - 1);
+            yield return (locationX, locationY + 1);
+            yield return (locationX - 1, locationY);
+            yield return (locationX + 1, locationY);
+            yield return (locationX - 1, locationY - 1);
+            yield return (locationX + 1, locationY - 1);
+            yield return (locationX - 1, locationY + 1);
+            yield return (locationX + 1, locationY + 1);
         }
 
         public Grid2D<T> BFS(

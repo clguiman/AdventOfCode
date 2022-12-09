@@ -67,8 +67,8 @@ namespace _2022
 
         private static int Solve(IEnumerable<((int x, int y) direction, int steps)> motions, int ropeLength)
         {
-            Grid2D<int> map = new(500, 500);
-            var rope = Enumerable.Range(0, ropeLength).Select(_ => (x: 250, y: 250)).ToArray();
+            HashSet<(int, int)> uniquePositions = new();
+            var rope = Enumerable.Range(0, ropeLength).Select(_ => (x: 0, y: 0)).ToArray();
             foreach (var motion in motions)
             {
                 for (var step = 0; step < motion.steps; step++)
@@ -77,34 +77,35 @@ namespace _2022
                     rope[0].y += motion.direction.y;
                     for (var idx = 1; idx < ropeLength; idx++)
                     {
-                        rope[idx] = ComputeFollowerPosition(map, rope[idx - 1].x, rope[idx - 1].y, rope[idx].x, rope[idx].y);
+                        rope[idx] = ComputeFollowerPosition(rope[idx - 1], rope[idx]);
                     }
-                    map.AtRef(rope[ropeLength - 1].x, rope[ropeLength - 1].y)++;
+                    uniquePositions.Add(rope[ropeLength - 1]);
                 }
             }
-            return map.Count(x => x != 0);
+            return uniquePositions.Count;
         }
 
-        private static (int x, int y) ComputeFollowerPosition(Grid2D<int> map, int headX, int headY, int tailX, int tailY)
+        private static (int x, int y) ComputeFollowerPosition((int x, int y) head, (int x, int y) tail)
         {
-            if (headX != tailX || headY != tailY)
+            if (head.x != tail.x || head.y != tail.y)
             {
-                if ((headX != tailX && headY == tailY) || (headX == tailX && headY != tailY))
+                if ((head.x != tail.x && head.y == tail.y) || (head.x == tail.x && head.y != tail.y))
                 {
                     // follow orthogonally
-                    var newTailLocation = map.GetAdjacentOrthogonalLocations(headX, headY).Intersect(map.GetAdjacentOrthogonalLocations(tailX, tailY)).FirstOrDefault((x: -1, y: -1));
-                    if (newTailLocation.x != -1)
+                    var newTailLocation = Grid2D<int>.GenerateAdjacentOrthogonalLocations(head.x, head.y).Intersect(Grid2D<int>.GenerateAdjacentOrthogonalLocations(tail.x, tail.y)).FirstOrDefault((x: int.MinValue, y: int.MinValue));
+                    if (newTailLocation.x != int.MinValue)
                     {
                         return newTailLocation;
                     }
                 }
-                else if (!map.GetAllAdjacentLocations(headX, headY).Any(t => t.x == tailX && t.y == tailY))
+                else if (!Grid2D<int>.GenerateAllAdjacentLocations(head.x, head.y).Any(t => t == tail))
                 {
-                    var newTailLocation = map.GetAllAdjacentLocations(headX, headY).Intersect(map.GetAllAdjacentLocations(tailX, tailY)).First();
+                    // follow diagonally
+                    var newTailLocation = Grid2D<int>.GenerateAllAdjacentLocations(head.x, head.y).Intersect(Grid2D<int>.GenerateAllAdjacentLocations(tail.x, tail.y)).First();
                     return newTailLocation;
                 }
             }
-            return (tailX, tailY);
+            return tail;
         }
 
         private static IEnumerable<((int x, int y) direction, int steps)> ParseInput(IEnumerable<string> input)
