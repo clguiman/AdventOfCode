@@ -175,13 +175,21 @@ namespace Utils
 
         public override string ToString()
         {
+            return ToString(' ');
+        }
+
+        public string ToString(char? separator)
+        {
             var sb = new StringBuilder();
             foreach (var line in _grid)
             {
                 foreach (var item in line)
                 {
                     sb.Append(item);
-                    sb.Append(' ');
+                    if (separator != null)
+                    {
+                        sb.Append(separator);
+                    }
                 }
                 sb.AppendLine();
             }
