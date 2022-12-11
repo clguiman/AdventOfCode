@@ -31,8 +31,10 @@ namespace _2022
         {
             var nextSignalCycle = 20;
             var ret = 0;
-            EmulateProgram(input, (int x, int cycles) =>
+            var cycles = 0;
+            EmulateProgram(input, (int x) =>
             {
+                cycles++;
                 if (nextSignalCycle <= cycles)
                 {
                     ret += nextSignalCycle * x;
@@ -46,7 +48,7 @@ namespace _2022
         {
             Grid2D<char> crt = new(40, 6);
             var crtPos = 0;
-            EmulateProgram(input, (int x, int cycles) =>
+            EmulateProgram(input, (int x) =>
             {
                 var crtXPos = crtPos % 40;
                 var crtYPos = crtPos / 40;
@@ -63,22 +65,17 @@ namespace _2022
             return crt.ToString(null);
         }
 
-        private static void EmulateProgram(IEnumerable<string> input, Action<int, int> observerAction)
+        private static void EmulateProgram(IEnumerable<string> input, Action<int> observerAction)
         {
             var x = 1;
-            var cycles = 0;
-            foreach (var op in ParseInput(input))
+            foreach (var xAddVal in ParseInput(input))
             {
-                cycles++;
-                observerAction(x, cycles);
-                if (op.code == OpCode.AddX)
-                {
-                    x += op.val;
-                }
+                observerAction(x);
+                x += xAddVal;
             }
         }
 
-        private static IEnumerable<(OpCode code, int val)> ParseInput(IEnumerable<string> input)
+        private static IEnumerable<int> ParseInput(IEnumerable<string> input)
         {
             foreach (var line in input)
             {
@@ -86,19 +83,14 @@ namespace _2022
                 if (tokens.Length == 1)
                 {
                     // no op
-                    yield return (OpCode.NoOp, 0);
-                    continue;
+                    yield return 0;
                 }
-                var addVal = int.Parse(tokens[1]);
-                yield return (OpCode.NoOp, 0);
-                yield return (OpCode.AddX, addVal);
+                else
+                {
+                    yield return 0;
+                    yield return int.Parse(tokens[1]);
+                }
             }
-        }
-
-        private enum OpCode
-        {
-            NoOp,
-            AddX
         }
     }
 }
