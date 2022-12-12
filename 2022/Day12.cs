@@ -11,57 +11,68 @@ namespace _2022
         [Fact]
         public void Test1()
         {
-            Assert.Equal(31, Part1(ParseInput(new[] {
+            Assert.Equal(31, Part1(new[] {
                 "Sabqponm",
                 "abcryxxl",
                 "accszExk",
                 "acctuvwj",
                 "abdefghi"
-            })));
+            }));
         }
 
         [Fact]
         public void Test2()
         {
-            Assert.Equal(472, Part1(ParseInput(File.ReadAllLines("input/day12.txt"))));
+            Assert.Equal(472, Part1(File.ReadAllLines("input/day12.txt")));
         }
 
         [Fact]
         public void Test3()
         {
-            Assert.Equal(29, Part2(ParseInput(new[] {
+            Assert.Equal(29, Part2(new[] {
                 "Sabqponm",
                 "abcryxxl",
                 "accszExk",
                 "acctuvwj",
                 "abdefghi"
-            })));
+            }));
         }
 
         [Fact]
         public void Test4()
         {
-            Assert.Equal(465, Part2(ParseInput(File.ReadAllLines("input/day12.txt"))));
+            Assert.Equal(465, Part2(File.ReadAllLines("input/day12.txt")));
         }
 
-        private static long Part1((Grid2D<char> map, (int x, int y) startPos, (int x, int y) endPos) input) =>
-            ComputeClimbCost(input.map, input.startPos, input.endPos);
+        private static long Part1(IEnumerable<string> input)
+        {
+            var (map, startPos, endPos) = ParseInput(input);
+            return map.ComputeWalkCost(startPos,
+                   t =>
+                   {
+                       return (t.possibleAdjacent.item - t.current.item) <= 1;
+                   },
+                   t => { },
+                   (_, _) => 1,
+                   useOnlyOrthogonalWalking: true
+               ).At(endPos.x, endPos.y);
+        }
 
-        private static long Part2((Grid2D<char> map, (int x, int y) startPos, (int x, int y) endPos) input) =>
-            input.map.Enumerate().Where(t => t.value == 'a').Select(pos =>
-                ComputeClimbCost(input.map, (pos.x, pos.y), input.endPos)
-            ).Min();
-
-        private static long ComputeClimbCost(Grid2D<char> map, (int x, int y) startPos, (int x, int y) endPos) =>
-            map.ComputeWalkCost(startPos,
-                    t =>
-                    {
-                        return (t.possibleAdjacent.item - t.current.item) <= 1;
-                    },
-                    t => { },
-                    (_, _) => 1,
+        private static long Part2(IEnumerable<string> input)
+        {
+            var (map, _, endPos) = ParseInput(input);
+            var costMap = map.ComputeWalkCost(endPos,
+                t =>
+                {
+                    return (t.current.item - t.possibleAdjacent.item) <= 1;
+                },
+                t => { },
+                (_, _) => 1,
                     useOnlyOrthogonalWalking: true
-                ).At(endPos.x, endPos.y);
+                );
+
+            return map.Enumerate().Where(t => t.value == 'a').Select(t => costMap.At(t.x, t.y)).Min();
+        }
 
         private static (Grid2D<char> map, (int x, int y) startPos, (int x, int y) endPos) ParseInput(IEnumerable<string> input)
         {
@@ -75,6 +86,5 @@ namespace _2022
 
             return (map, (start.x, start.y), (end.x, end.y));
         }
-
     }
 }
