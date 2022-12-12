@@ -24,7 +24,6 @@ namespace _2022
         public void Test2()
         {
             Assert.Equal(472, Part1(ParseInput(File.ReadAllLines("input/day12.txt"))));
-
         }
 
         [Fact]
@@ -43,7 +42,6 @@ namespace _2022
         public void Test4()
         {
             Assert.Equal(465, Part2(ParseInput(File.ReadAllLines("input/day12.txt"))));
-
         }
 
         private static long Part1((Grid2D<char> map, (int x, int y) startPos, (int x, int y) endPos) input) =>
