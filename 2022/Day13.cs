@@ -95,14 +95,8 @@ namespace _2022
         private static int Part2(IEnumerable<TreeNode> packets)
         {
             var dividerPackets = ParseInput(new[] { "[[2]]", "[[6]]" }).ToArray();
-
-            return packets
-                .Concat(dividerPackets)
-                .Order(new TreeNodeComparer())
-                .Select((p, idx) => (p, idx: idx + 1))
-                .Where(x => 0 == x.p.Compare(dividerPackets[0]) || 0 == x.p.Compare(dividerPackets[1]))
-                .Select(x => x.idx)
-                .Aggregate((x, y) => x * y);
+            return  (packets.Count(x => 1 != x.Compare(dividerPackets[0])) + 1) * 
+                    (packets.Count(x => 1 != x.Compare(dividerPackets[1])) + 2);
         }
 
         private static IEnumerable<TreeNode> ParseInput(IEnumerable<string> input) => input
@@ -200,14 +194,6 @@ namespace _2022
                 }
 
                 return -1;
-            }
-        }
-
-        private class TreeNodeComparer : IComparer<TreeNode>
-        {
-            public int Compare(TreeNode x, TreeNode y)
-            {
-                return x.Compare(y);
             }
         }
     }
