@@ -68,7 +68,7 @@ namespace _2021
 
             for (var idx = 0; idx < steps; idx++)
             {
-                var newMap = map.Clone();
+                var newMap = map.Clone() as Grid2D<char>;
                 for (var y = 0; y < map.Height; y++)
                 {
                     for (var x = 0; x < map.Width; x++)
