@@ -5,6 +5,8 @@
     <RootNamespace>_2023</RootNamespace>
 
     <IsPackable>false</IsPackable>
+
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +30,11 @@
     <None Update="input\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Utils" />
+    <Using Include="Xunit" />
   </ItemGroup>
 
 </Project>

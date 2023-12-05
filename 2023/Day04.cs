@@ -1,9 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Utils;
-using Xunit;
-
 namespace _2023
 {
     public class Day04
