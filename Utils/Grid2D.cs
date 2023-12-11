@@ -69,6 +69,7 @@ namespace Utils
         public override void SetAt(T val, Point2D location) => SetAt(val, location.X, location.Y);
 
         public override Grid2DBase<T> Clone() => new Grid2D<T>(_grid);
+
         protected override bool IsCoordinateValid(Point2D coordinate) =>
             coordinate.X >= 0 && coordinate.X < Width && coordinate.Y >= 0 && coordinate.Y < Height;
 

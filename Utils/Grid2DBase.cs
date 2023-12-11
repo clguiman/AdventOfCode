@@ -88,7 +88,7 @@
             };
             if (!allowReWalk)
             {
-                HashSet<Point2D> nextSteps = new() { initialPosition };
+                HashSet<Point2D> nextSteps = [initialPosition];
                 while (nextSteps.Count > 0)
                 {
                     var newPositions = new HashSet<Point2D>(2 * nextSteps.Count);
@@ -98,7 +98,7 @@
             }
             else
             {
-                List<Point2D> nextSteps = new[] { initialPosition }.ToList();
+                List<Point2D> nextSteps = [initialPosition];
                 while (nextSteps.Count > 0)
                 {
                     var newPositions = new List<Point2D>(2 * nextSteps.Count);
@@ -170,6 +170,31 @@
                 (t) => { onWalkNext(((t.current.item, t.current.location.X, t.current.location.Y), (t.next.item, t.next.location.X, t.next.location.Y))); },
                 walkCostFunc, useOnlyOrthogonalWalking
                 );
+
+        public static Direction GetDirectionForAdjacentLocation(Point2D origin, Point2D adjacentPosition)
+        {
+            if (((adjacentPosition.X - origin.X) * (adjacentPosition.X - origin.X) + (adjacentPosition.Y - origin.Y) * (adjacentPosition.Y - origin.Y)) != 1)
+            {
+                throw new ArgumentException("The two points must be adjacent!");
+            }
+
+            if (origin.X == adjacentPosition.X)
+            {
+                return origin.Y > adjacentPosition.Y ? Direction.North : Direction.South;
+            }
+            else
+            {
+                return origin.X > adjacentPosition.X ? Direction.West : Direction.East;
+            }
+        }
+
+        public enum Direction
+        {
+            North,
+            East,
+            South,
+            West,
+        }
 
         protected abstract bool IsCoordinateValid(Point2D coordinate);
 
