@@ -1,10 +1,16 @@
 ﻿namespace Utils
 {
-    public struct Point2D
+    public struct Point2D(int x, int y)
     {
-        public Point2D(int x, int y) { X = x; Y = y; }
-        public int X { get; init; }
-        public int Y { get; init; }
+        public int X { get; init; } = x;
+        public int Y { get; init; } = y;
+
+        public readonly int ManhattanDistance(Point2D other)
+        {
+            return Math.Abs(X - other.X) + Math.Abs(Y - other.Y);
+        }
+
+        public override readonly string ToString() => $"({X}, {Y})";
     }
 
     public abstract class Grid2DBase<T>
