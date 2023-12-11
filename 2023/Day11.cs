@@ -67,22 +67,16 @@ namespace _2023
 
         private static long Solve(Grid2D<char> image, int distanceBetweenEmptySpace)
         {
-            var rowsToDuplicate = new List<int>();
-            for (var rowIdx = 0; rowIdx < image.Height; rowIdx++)
-            {
-                if (image.Rows.Take(new Range(rowIdx, rowIdx + 1)).Single().All(x => x == '.'))
-                {
-                    rowsToDuplicate.Add(rowIdx);
-                }
-            }
-            var colsToDuplicate = new List<int>();
-            for (var colIdx = 0; colIdx < image.Width; colIdx++)
-            {
-                if (image.Columns.Take(new Range(colIdx, colIdx + 1)).Single().All(x => x == '.'))
-                {
-                    colsToDuplicate.Add(colIdx);
-                }
-            }
+            var rowsToDuplicate = image.Rows
+                                        .Select((row, idx) => (row, idx))
+                                        .Where(t => t.row.All(x => x == '.'))
+                                        .Select(t => t.idx)
+                                        .ToList();
+            var colsToDuplicate = image.Columns
+                                        .Select((col, idx) => (col, idx))
+                                        .Where(t => t.col.All(x => x == '.'))
+                                        .Select(t => t.idx)
+                                        .ToList();
 
             var galaxyLocations = image
                 .Where(t => t.value == '#')
@@ -91,16 +85,11 @@ namespace _2023
                             t.y + HowManyItemsToAdd(rowsToDuplicate, t.y, distanceBetweenEmptySpace)))
                 .ToArray();
 
-            var distancesToCompute = new List<(Point2D origin, Point2D dest)>();
-            for (var idx = 0; idx < galaxyLocations.Length - 1; idx++)
-            {
-                for (var idx2 = idx + 1; idx2 < galaxyLocations.Length; idx2++)
-                {
-                    distancesToCompute.Add((galaxyLocations[idx], galaxyLocations[idx2]));
-                }
-            }
-
-            return distancesToCompute.Select(d => d.origin.ManhattanDistance(d.dest)).Select(x => (long)x).Sum();
+            return Enumerable.Range(0, galaxyLocations.Length)
+                .Select(idx => Enumerable.Range(idx + 1, galaxyLocations.Length - idx - 1)
+                                         .Select(idx2 => (long)galaxyLocations[idx].ManhattanDistance(galaxyLocations[idx2]))
+                                         .Sum())
+                .Sum();
         }
 
         private static int HowManyItemsToAdd(List<int> duplicateIndices, int index, int distanceBetweenEmptySpace)
